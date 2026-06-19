@@ -40,24 +40,9 @@
       "roles": ["Builder"]
     },
     {
-      "name": "Slay3r",
-      "discord_tag": "@kyfallen",
-      "roles": ["Scourge Legacy Host", "Builder"]
-    },
-    {
-      "name": "0bscur3d",
-      "discord_tag": "@vorthexis",
-      "roles": ["Scourge Legacy Host"]
-    },
-    {
       "name": "Jibril",
       "discord_tag": "@jke3223",
-      "roles": ["Builder", "Artist", "Scourge Legacy Host"]
-    },
-    {
-      "name": "Kaeye",
-      "discord_tag": "@kaeye_49501",
-      "roles": ["Scourge Legacy Member"]
+      "roles": ["Builder", "Artist"]
     },
     {
       "name": "Glitcher",
