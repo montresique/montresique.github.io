@@ -30,6 +30,11 @@
       "roles": ["Manager", "Builder"]
     },
     {
+      "name": "MultiCoolStudios",
+      "discord_tag": "@coolmanmulticraftplanetofcubes",
+      "roles": ["Technology Developer"]
+    },
+    {
       "name": "Just_random",
       "discord_tag": "",
       "roles": ["Builder"]
@@ -40,29 +45,19 @@
       "roles": ["Builder"]
     },
     {
-      "name": "Slay3r",
-      "discord_tag": "@kyfallen",
-      "roles": ["Scourge Legacy Host", "Builder"]
-    },
-    {
-      "name": "0bscur3d",
-      "discord_tag": "@vorthexis",
-      "roles": ["Scourge Legacy Host"]
-    },
-    {
       "name": "Jibril",
       "discord_tag": "@jke3223",
-      "roles": ["Builder", "Artist", "Scourge Legacy Host"]
-    },
-    {
-      "name": "Kaeye",
-      "discord_tag": "@kaeye_49501",
-      "roles": ["Scourge Legacy Member"]
+      "roles": ["Builder", "Artist"]
     },
     {
       "name": "Glitcher",
       "discord_tag": "@torchip384",
-      "roles": ["Glitches & Bugs Finder", "Bluestone Expert", "Developer"]
+      "roles": ["Developer"]
+    },
+    {
+      "name": "Game1K",
+      "discord_tag": "@game1kyt",
+      "roles": ["Developer"]
     }
   ],
   "programs": [
