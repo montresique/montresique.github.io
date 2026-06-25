@@ -531,6 +531,7 @@
   let allServers   = [];
   let serversLoaded = false;
   let refreshTimer = null;
+  let playersCache = {}; // server_id -> { players: [...], ts: Number, errored: Boolean }
 
   async function init() {
     const year = new Date().getFullYear();
@@ -621,7 +622,15 @@
   }
 
   // SERVERS
+  let lastServersSignature = null;
+
+  function serversSignature(list) {
+    // Cheap signature so we skip re-renders (and losing open player panels) when nothing changed
+    return list.map(s => `${s.server_id}:${s.online}:${s.suspended}:${s.connected_players}:${s.max_players}`).join('|');
+  }
+
   async function loadServers() {
+    let fetchFailed = false;
     try {
       const res = await fetch(PROXY_URL, {
         method: 'POST',
@@ -647,32 +656,40 @@
       }
 
       const seen = new Set();
-      allServers = raw.filter(s => {
+      const fresh = raw.filter(s => {
         if (seen.has(s.server_id)) return false;
         seen.add(s.server_id); return true;
       });
 
       const featuredId = siteData?.main_server_id;
-      allServers.sort((a, b) => {
+      fresh.sort((a, b) => {
         if (a.server_id === featuredId) return -1;
         if (b.server_id === featuredId) return 1;
         return (b.connected_players || 0) - (a.connected_players || 0);
       });
 
-      const flagship = allServers.find(s => s.server_id === featuredId) || allServers[0] || null;
-      updateNavDot(flagship);
-      renderMainServer(flagship);
+      // Cache: only commit + re-render if something actually changed.
+      allServers = fresh;
 
     } catch(e) {
-      console.error('Server fetch failed:', e);
-      allServers = [];
-      updateNavDot(null);
-      renderMainServer(null);
+      console.error('Server fetch failed, keeping cached server list:', e);
+      fetchFailed = true;
+      // Intentionally do NOT clear allServers here — keep showing the last good cache.
     }
 
     document.getElementById('servers-loading').style.display = 'none';
     serversLoaded = true;
-    renderServers();
+
+    const featuredId = siteData?.main_server_id;
+    const flagship = allServers.find(s => s.server_id === featuredId) || allServers[0] || null;
+    updateNavDot(flagship);
+    renderMainServer(flagship);
+
+    const sig = serversSignature(allServers);
+    if (sig !== lastServersSignature) {
+      lastServersSignature = sig;
+      renderServers();
+    }
   }
 
   function updateNavDot(s) {
@@ -686,6 +703,13 @@
     el.innerHTML = `
       <div class="main-server-name">${esc(s.server_name || 'Unnamed')}</div>
       <div class="main-server-desc">${esc(s.description || '')}</div>
+      <div style="margin-top:0.9rem;">
+        <button class="players-btn" id="players-toggle-btn-home" onclick="togglePlayersPanel('${esc(s.server_id)}', 'home')">List Players</button>
+      </div>
+      <div class="players-panel" id="players-panel-home">
+        <div class="players-panel-title">Online Players</div>
+        <div id="players-content-home"></div>
+      </div>
     `;
   }
 
@@ -733,7 +757,14 @@
         <div class="server-desc">${esc(s.description || 'No description.')}</div>
         <div class="server-footer">
           <span class="status-text status-${sc}">${st}</span>
-          ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Discord</a>` : ''}
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <button class="players-btn" id="players-toggle-btn-card-${esc(s.server_id)}" onclick="event.stopPropagation(); togglePlayersPanel('${esc(s.server_id)}', 'card-${esc(s.server_id)}')">List Players</button>
+            ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Discord</a>` : ''}
+          </div>
+        </div>
+        <div class="players-panel" id="players-panel-card-${esc(s.server_id)}" onclick="event.stopPropagation()">
+          <div class="players-panel-title">Online Players</div>
+          <div id="players-content-card-${esc(s.server_id)}"></div>
         </div>
       `;
       grid.appendChild(card);
@@ -768,13 +799,13 @@
       <div class="modal-footer">
         <span class="status-text status-${sc}">${st}</span>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <button class="players-btn" id="players-toggle-btn" onclick="togglePlayersPanel('${esc(s.server_id)}')">List Players</button>
+          <button class="players-btn" id="players-toggle-btn-modal" onclick="togglePlayersPanel('${esc(s.server_id)}', 'modal')">List Players</button>
           ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
         </div>
       </div>
-      <div class="players-panel" id="players-panel">
+      <div class="players-panel" id="players-panel-modal">
         <div class="players-panel-title">Online Players</div>
-        <div id="players-content"></div>
+        <div id="players-content-modal"></div>
       </div>
     `;
     document.getElementById('server-modal').classList.add('open');
@@ -782,11 +813,25 @@
   function closeServerModal() { document.getElementById('server-modal').classList.remove('open'); }
   function closeServerModalOutside(e) { if (e.target.id === 'server-modal') closeServerModal(); }
 
-  // PLAYERS LIST
-  async function togglePlayersPanel(serverId) {
-    const panel = document.getElementById('players-panel');
-    const content = document.getElementById('players-content');
-    const btn = document.getElementById('players-toggle-btn');
+  // PLAYERS LIST (cached per server_id; reused across home / card / modal instances)
+  function renderPlayersInto(contentEl, players, staleNote) {
+    if (players.length === 0) {
+      contentEl.innerHTML = '<div class="players-status">No players currently online.</div>'
+        + (staleNote ? `<div class="players-status" style="margin-top:0.3rem;font-size:0.7rem;">${staleNote}</div>` : '');
+      return;
+    }
+    contentEl.innerHTML = `<div class="players-list">${
+      players.map(p => {
+        const name = typeof p === 'string' ? p : (p.name || p.username || p.player_name || 'Unknown');
+        return `<span class="player-chip"><span class="dot"></span>${esc(name)}</span>`;
+      }).join('')
+    }</div>` + (staleNote ? `<div class="players-status" style="margin-top:0.5rem;font-size:0.7rem;">${staleNote}</div>` : '');
+  }
+
+  async function togglePlayersPanel(serverId, instanceKey) {
+    const panel   = document.getElementById('players-panel-' + instanceKey);
+    const content = document.getElementById('players-content-' + instanceKey);
+    const btn     = document.getElementById('players-toggle-btn-' + instanceKey);
     if (!panel) return;
 
     const isOpen = panel.classList.contains('open');
@@ -796,8 +841,15 @@
     }
 
     panel.classList.add('open');
-    content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
-    btn.disabled = true;
+
+    const cached = playersCache[serverId];
+    if (cached) {
+      // Show cached data immediately while we check for an update in the background.
+      renderPlayersInto(content, cached.players, null);
+    } else {
+      content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
+    }
+    if (btn) btn.disabled = true;
 
     try {
       const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(serverId));
@@ -810,22 +862,26 @@
         : null;
 
       if (!players) {
-        content.innerHTML = '<div class="players-status is-error">Unexpected response from server.</div>';
-      } else if (players.length === 0) {
-        content.innerHTML = '<div class="players-status">No players currently online.</div>';
-      } else {
-        content.innerHTML = `<div class="players-list">${
-          players.map(p => {
-            const name = typeof p === 'string' ? p : (p.name || p.username || p.player_name || 'Unknown');
-            return `<span class="player-chip"><span class="dot"></span>${esc(name)}</span>`;
-          }).join('')
-        }</div>`;
+        if (!cached) content.innerHTML = '<div class="players-status is-error">Unexpected response from server.</div>';
+        // if cached exists, keep showing it rather than erroring out
+        return;
+      }
+
+      // Cache the fresh result and re-render only this instance (panel may still be open).
+      playersCache[serverId] = { players, ts: Date.now() };
+      if (panel.classList.contains('open')) {
+        renderPlayersInto(content, players, null);
       }
     } catch (e) {
       console.error('Failed to fetch players:', e);
-      content.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
+      if (cached) {
+        // Keep the cached list visible, just note it couldn't refresh.
+        renderPlayersInto(content, cached.players, 'Could not refresh just now &mdash; showing last known list.');
+      } else {
+        content.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
+      }
     } finally {
-      btn.disabled = false;
+      if (btn) btn.disabled = false;
     }
   }
 
