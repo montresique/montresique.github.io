@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Montresique [ℳ]</title>
+  <title>Montresique [&#8499;]</title>
   <style>
     @font-face {
       font-family: 'MultiCraftFont';
@@ -290,7 +290,7 @@
     }
     .program-card:hover { border-color: rgba(200,160,255,0.3); transform: translateY(-2px); }
     .program-card::after {
-      content: 'ℳ'; position: absolute; bottom: -0.5rem; right: 0.5rem;
+      content: '\2133'; position: absolute; bottom: -0.5rem; right: 0.5rem;
       font-size: 5rem; color: rgba(200,160,255,0.04); pointer-events: none; line-height: 1;
     }
     .program-name { font-size: 1rem; color: #fff; margin-bottom: 0.55rem; }
@@ -302,7 +302,7 @@
     }
     footer .mark { color: var(--violet); }
 
-    /* ── MODAL: server detail ── */
+    /* MODAL: server detail */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 1000;
       background: rgba(5,5,10,0.75); backdrop-filter: blur(6px);
@@ -324,9 +324,38 @@
     .modal-admin { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
     .modal-admin span { color: var(--violet); }
     .modal-desc { font-size: 0.87rem; color: var(--text); line-height: 1.8; white-space: pre-line; margin-bottom: 1.2rem; }
-    .modal-footer { display: flex; justify-content: space-between; align-items: center; }
+    .modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 
-    /* ── MODAL: discord profile ── */
+    /* PLAYERS PANEL (inside server modal) */
+    .players-btn {
+      font-family: 'MultiCraftFont', monospace;
+      font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--violet); background: rgba(200,160,255,0.08);
+      border: 1px solid rgba(200,160,255,0.3); border-radius: 4px;
+      padding: 0.35rem 0.8rem; cursor: pointer; transition: background 0.2s, color 0.2s;
+    }
+    .players-btn:hover { background: rgba(200,160,255,0.16); }
+    .players-btn:disabled { opacity: 0.5; cursor: default; }
+    .players-panel {
+      margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);
+      display: none;
+    }
+    .players-panel.open { display: block; }
+    .players-panel-title {
+      font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 0.6rem;
+    }
+    .players-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .player-chip {
+      font-size: 0.78rem; color: var(--text); background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 4px; padding: 0.25rem 0.6rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .player-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 4px var(--green); flex-shrink:0; }
+    .players-status { font-size: 0.82rem; color: var(--muted); }
+    .players-status.is-error { color: var(--red); }
+
+    /* MODAL: discord profile */
     .dc-card {
       width: 100%; max-width: 340px; background: #1e1f22; border-radius: 10px;
       overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.5); font-family: 'MultiCraftFont', monospace;
@@ -367,7 +396,7 @@
 <body>
 
 <nav>
-  <div class="nav-logo" onclick="showPage('home')">ℳ<span>ontresique</span></div>
+  <div class="nav-logo" onclick="showPage('home')">&#8499;<span>ontresique</span></div>
   <ul class="nav-links">
     <li><button onclick="showPage('home')"     id="nav-home"    class="active">Home</button></li>
     <li><button onclick="showPage('servers')"  id="nav-servers"><span class="nav-dot" id="nav-dot"></span>Servers</button></li>
@@ -381,12 +410,12 @@
 <div class="page active" id="page-home">
   <section class="hero">
     <div class="hero-bg"></div>
-    <div class="hero-monogram">ℳ</div>
+    <div class="hero-monogram">&#8499;</div>
     <div class="hero-content">
       <div class="hero-eyebrow">// MultiCraft Organization</div>
-      <h1 class="hero-title"><span class="accent">ℳ</span>ontresique</h1>
+      <h1 class="hero-title"><span class="accent">&#8499;</span>ontresique</h1>
       <div class="hero-overview">
-        Montresique is an organization on the game MultiCraft — Build and Mine (based off Luanti, formerly Minetest)
+        Montresique is an organization on the game MultiCraft &mdash; Build and Mine (based off Luanti, formerly Minetest)
         that creates advanced MultiCraft programs, signs people with good skills, publishes the best servers,
         and researches deep into MultiCraft's hidden features and complex mechanics.
         Montresique's main server is primarily Unstable Realms.
@@ -418,7 +447,7 @@
     <div class="section-label">// Main Server</div>
     <h2 class="section-title">Main Server</h2>
     <div class="main-server-block" id="home-main-server">
-      <div class="main-server-name" style="color:var(--muted)">Loading…</div>
+      <div class="main-server-name" style="color:var(--muted)">Loading&hellip;</div>
     </div>
   </div>
 
@@ -442,7 +471,7 @@
     </div>
   </div>
 
-  <footer><span class="mark">ℳ</span> Montresique · <span id="footer-year-home"></span> · Powered by area12.lol</footer>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-home"></span> &middot; Powered by area12.lol</footer>
 </div>
 
 <!-- SERVERS -->
@@ -450,12 +479,12 @@
   <div class="servers-header">
     <div class="section-label">// Server List</div>
     <h2 class="section-title">Montresique's Servers</h2>
-    <input class="search-box" type="text" id="server-search" placeholder="Search servers…" oninput="renderServers()" />
+    <input class="search-box" type="text" id="server-search" placeholder="Search servers&hellip;" oninput="renderServers()" />
   </div>
-  <div id="servers-loading" class="loading-state"><div class="spinner"></div>Fetching servers…</div>
+  <div id="servers-loading" class="loading-state"><div class="spinner"></div>Fetching servers&hellip;</div>
   <div id="servers-empty"  class="empty-state" style="display:none;">No servers found. (If this shows for you, just wait for a bit. It will display eventually.)</div>
   <div class="servers-grid" id="servers-grid"></div>
-  <footer><span class="mark">ℳ</span> Montresique · <span id="footer-year-servers"></span> · Powered by area12.lol</footer>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-servers"></span> &middot; Powered by area12.lol</footer>
 </div>
 
 <!-- TEAM -->
@@ -468,7 +497,7 @@
     <div class="section-sub">Members</div>
     <div class="team-grid" id="team-members"></div>
   </div>
-  <footer><span class="mark">ℳ</span> Montresique · <span id="footer-year-team"></span> · Powered by area12.lol</footer>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-team"></span> &middot; Powered by area12.lol</footer>
 </div>
 
 <!-- PROGRAMS -->
@@ -481,7 +510,7 @@
     </p>
     <div class="programs-grid" id="programs-grid"></div>
   </div>
-  <footer><span class="mark">ℳ</span> Montresique · <span id="footer-year-programs"></span> · Powered by area12.lol</footer>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-programs"></span> &middot; Powered by area12.lol</footer>
 </div>
 
 <!-- SERVER MODAL -->
@@ -490,8 +519,11 @@
 </div>
 
 <script>
-  const REAL_MARK        = '\u2133'; // ℳ — used to detect official Montresique servers
-  const PROXY_URL        = 'https://multicraft-production.up.railway.app/proxy/find-nearby-servers';
+  const REAL_MARK        = '\u2133'; // &#8499; &mdash; used to detect official Montresique servers
+  const PROXY_URL_B64        = 'aHR0cHM6Ly9tdWx0aWNyYWZ0LXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAvcHJveHkvZmluZC1uZWFyYnktc2VydmVycw==';
+  const PROXY_URL            = atob(PROXY_URL_B64);
+  const PLAYERS_URL_BASE_B64 = 'aHR0cHM6Ly9tdWx0aWNyYWZ0LXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAvcHJveHkvbGlzdC1wbGF5ZXJzLw==';
+  const PLAYERS_URL_BASE     = atob(PLAYERS_URL_BASE_B64);
   const REFRESH_MS       = 10000;
 
   let siteData    = null;
@@ -543,7 +575,7 @@
     ).join('');
   }
 
-  // ── LEADERSHIP (home) ──
+  // LEADERSHIP (home)
   function renderLeadership() {
     const el = document.getElementById('home-leadership');
     el.innerHTML = '';
@@ -557,7 +589,7 @@
     });
   }
 
-  // ── TEAM PAGE ──
+  // TEAM PAGE
   function renderTeam() {
     const lg = document.getElementById('team-leadership');
     const mg = document.getElementById('team-members');
@@ -575,7 +607,7 @@
       </div>`;
   }
 
-  // ── PROGRAMS ──
+  // PROGRAMS
   function renderPrograms() {
     const grid = document.getElementById('programs-grid');
     grid.innerHTML = '';
@@ -588,7 +620,7 @@
     });
   }
 
-  // ── SERVERS ──
+  // SERVERS
   async function loadServers() {
     try {
       const res = await fetch(PROXY_URL, {
@@ -601,14 +633,12 @@
 
       const raw = [];
 
-      // Favorites: only keep ones whose name/description contains the ℳ mark
       if (data.favorites) {
         Object.values(data.favorites).forEach(s => {
           const combined = (s.server_name || '') + ' ' + (s.description || '');
           if (combined.includes(REAL_MARK)) raw.push(s);
         });
       }
-      // Nearby: same filter
       if (data.nearby) {
         data.nearby.forEach(s => {
           const combined = (s.server_name || '') + ' ' + (s.description || '');
@@ -693,13 +723,13 @@
           <div class="status-dot ${sc}"></div>
         </div>
         <div class="server-meta">
-          <span class="meta-pill pill-players">👥 ${players}</span>
+          <span class="meta-pill pill-players">&#128101; ${players}</span>
           ${s.creative_mode ? '<span class="meta-pill pill-creative">Creative</span>' : '<span class="meta-pill pill-survival">Survival</span>'}
           ${s.hardcore ? '<span class="meta-pill pill-hardcore">Hardcore</span>' : ''}
           ${s.premium  ? '<span class="meta-pill pill-premium">Premium</span>'  : ''}
           <span class="meta-pill pill-id">${esc(s.server_id)}</span>
         </div>
-        <div class="server-admin">Admin: <span>${esc(s.admin_name || '—')}</span></div>
+        <div class="server-admin">Admin: <span>${esc(s.admin_name || '&mdash;')}</span></div>
         <div class="server-desc">${esc(s.description || 'No description.')}</div>
         <div class="server-footer">
           <span class="status-text status-${sc}">${st}</span>
@@ -710,7 +740,7 @@
     });
   }
 
-  // ── SERVER MODAL ──
+  // SERVER MODAL
   function openServerModal(serverId) {
     const s = allServers.find(x => x.server_id === serverId);
     if (!s) return;
@@ -733,17 +763,71 @@
         ${s.premium  ? '<span class="meta-pill pill-premium">Premium</span>'  : ''}
         <span class="meta-pill pill-id">${esc(s.server_id)}</span>
       </div>
-      <div class="modal-admin">Admin: <span>${esc(s.admin_name || '—')}</span></div>
+      <div class="modal-admin">Admin: <span>${esc(s.admin_name || '&mdash;')}</span></div>
       <div class="modal-desc">${esc(s.description || 'No description.')}</div>
       <div class="modal-footer">
         <span class="status-text status-${sc}">${st}</span>
-        ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <button class="players-btn" id="players-toggle-btn" onclick="togglePlayersPanel('${esc(s.server_id)}')">List Players</button>
+          ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
+        </div>
+      </div>
+      <div class="players-panel" id="players-panel">
+        <div class="players-panel-title">Online Players</div>
+        <div id="players-content"></div>
       </div>
     `;
     document.getElementById('server-modal').classList.add('open');
   }
   function closeServerModal() { document.getElementById('server-modal').classList.remove('open'); }
   function closeServerModalOutside(e) { if (e.target.id === 'server-modal') closeServerModal(); }
+
+  // PLAYERS LIST
+  async function togglePlayersPanel(serverId) {
+    const panel = document.getElementById('players-panel');
+    const content = document.getElementById('players-content');
+    const btn = document.getElementById('players-toggle-btn');
+    if (!panel) return;
+
+    const isOpen = panel.classList.contains('open');
+    if (isOpen) {
+      panel.classList.remove('open');
+      return;
+    }
+
+    panel.classList.add('open');
+    content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(serverId));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      const players = Array.isArray(data) ? data
+        : Array.isArray(data.players) ? data.players
+        : Array.isArray(data.connected_players) ? data.connected_players
+        : null;
+
+      if (!players) {
+        content.innerHTML = '<div class="players-status is-error">Unexpected response from server.</div>';
+      } else if (players.length === 0) {
+        content.innerHTML = '<div class="players-status">No players currently online.</div>';
+      } else {
+        content.innerHTML = `<div class="players-list">${
+          players.map(p => {
+            const name = typeof p === 'string' ? p : (p.name || p.username || p.player_name || 'Unknown');
+            return `<span class="player-chip"><span class="dot"></span>${esc(name)}</span>`;
+          }).join('')
+        }</div>`;
+      }
+    } catch (e) {
+      console.error('Failed to fetch players:', e);
+      content.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
+    } finally {
+      btn.disabled = false;
+    }
+  }
 
   function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
