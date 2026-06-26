@@ -822,16 +822,36 @@
     }
     contentEl.innerHTML = `<div class="players-list">${
       players.map(p => {
-        const name = typeof p === 'string' ? p : (p.name || p.username || p.player_name || 'Unknown');
+        const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
         return `<span class="player-chip"><span class="dot"></span>${esc(name)}</span>`;
       }).join('')
     }</div>` + (staleNote ? `<div class="players-status" style="margin-top:0.5rem;font-size:0.7rem;">${staleNote}</div>` : '');
   }
 
+  // Tries a wide range of likely response shapes. Returns an array (possibly empty) or null if unrecognized.
+  function extractPlayersList(data) {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const candidateKeys = ['players', 'connected_players', 'online_players', 'playerlist', 'player_list', 'result', 'data', 'names'];
+      for (const key of candidateKeys) {
+        if (Array.isArray(data[key])) return data[key];
+      }
+      // Object keyed by id/name, e.g. { "Steve": {...}, "Alex": {...} } or { "0": "Steve", "1": "Alex" }
+      const values = Object.values(data);
+      if (values.length > 0 && values.every(v => typeof v === 'string' || (v && typeof v === 'object'))) {
+        // Only treat as a player map if it doesn't look like a known non-list status object
+        const looksLikeStatusObject = ('online' in data) || ('error' in data) || ('success' in data);
+        if (!looksLikeStatusObject) return values;
+      }
+    }
+    return null;
+  }
+
+  const PLAYERS_RETRY_LIMIT = 2;
+  let playersRetryCounts = {};
+
   async function togglePlayersPanel(serverId, instanceKey) {
-    const panel   = document.getElementById('players-panel-' + instanceKey);
-    const content = document.getElementById('players-content-' + instanceKey);
-    const btn     = document.getElementById('players-toggle-btn-' + instanceKey);
+    const panel = document.getElementById('players-panel-' + instanceKey);
     if (!panel) return;
 
     const isOpen = panel.classList.contains('open');
@@ -841,6 +861,15 @@
     }
 
     panel.classList.add('open');
+    playersRetryCounts[serverId] = 0;
+    fetchPlayersForInstance(serverId, instanceKey);
+  }
+
+  async function fetchPlayersForInstance(serverId, instanceKey) {
+    const panel   = document.getElementById('players-panel-' + instanceKey);
+    const content = document.getElementById('players-content-' + instanceKey);
+    const btn     = document.getElementById('players-toggle-btn-' + instanceKey);
+    if (!panel || !panel.classList.contains('open')) return; // panel was closed before this ran
 
     const cached = playersCache[serverId];
     if (cached) {
@@ -856,14 +885,20 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
 
-      const players = Array.isArray(data) ? data
-        : Array.isArray(data.players) ? data.players
-        : Array.isArray(data.connected_players) ? data.connected_players
-        : null;
+      const players = extractPlayersList(data);
 
       if (!players) {
-        if (!cached) content.innerHTML = '<div class="players-status is-error">Unexpected response from server.</div>';
-        // if cached exists, keep showing it rather than erroring out
+        // Log the raw shape so it can be inspected in the browser console.
+        console.warn('[players] Unrecognized response shape for', serverId, data);
+        if (cached) {
+          renderPlayersInto(content, cached.players, 'Could not parse the latest response &mdash; showing last known list.');
+        } else if ((playersRetryCounts[serverId] || 0) < PLAYERS_RETRY_LIMIT) {
+          playersRetryCounts[serverId] = (playersRetryCounts[serverId] || 0) + 1;
+          content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
+          setTimeout(() => fetchPlayersForInstance(serverId, instanceKey), 3000);
+        } else {
+          content.innerHTML = '<div class="players-status is-error">Could not read player data for this server.</div>';
+        }
         return;
       }
 
@@ -875,7 +910,6 @@
     } catch (e) {
       console.error('Failed to fetch players:', e);
       if (cached) {
-        // Keep the cached list visible, just note it couldn't refresh.
         renderPlayersInto(content, cached.players, 'Could not refresh just now &mdash; showing last known list.');
       } else {
         content.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
