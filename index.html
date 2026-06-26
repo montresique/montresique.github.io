@@ -560,12 +560,13 @@
     refreshTimer = setInterval(loadServers, REFRESH_MS);
   }
 
-  function showPage(id) {
+  function showPage(id, push = true) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     document.getElementById('nav-' + id).classList.add('active');
-    window.scrollTo(0, 0);
+    if(push){history.pushState({},'', id==='home' ? '/' : '/'+id);}
+    window.scrollTo(0,0);
   }
 
   function roleColor(role) { return rolesMap[role] || '#c8a0ff'; }
@@ -738,7 +739,10 @@
 
       const card = document.createElement('div');
       card.className = 'server-card' + (isFeatured ? ' featured' : '');
-      card.onclick = () => openServerModal(s.server_id);
+      card.onclick = () => {
+        history.pushState({}, '', '/server/' + s.server_id);
+        openServerModal(s.server_id);
+      };
       card.innerHTML = `
         <div class="server-top">
           <div class="server-name">
@@ -815,7 +819,9 @@
   function closeServerModalOutside(e) { if (e.target.id === 'server-modal') closeServerModal(); }
 
   // PLAYERS LIST (cached per server_id; reused across home / card / modal instances)
-  function renderPlayersInto(contentEl, players, staleNote) {
+  function renderPlayersInto(contentEl, players, staleNote, serverId) {
+    const server = allServers.find(s => s.server_id === serverId);
+    const owner = server?.admin_name?.trim().toLowerCase();
     if (players.length === 0) {
       contentEl.innerHTML = '<div class="players-status">No players currently online.</div>'
         + (staleNote ? `<div class="players-status" style="margin-top:0.3rem;font-size:0.7rem;">${staleNote}</div>` : '');
@@ -824,7 +830,8 @@
     contentEl.innerHTML = `<div class="players-list">${
       players.map(p => {
         const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
-        return `<span class="player-chip"><span class="dot"></span>${esc(name)}</span>`;
+        const isOwner = owner && name.trim().toLowerCase() === owner;
+        return `<span class="player-chip"><span class="dot"></span>${isOwner ? '<span style="color:#FFD700;">👑</span>' : ''}${esc(name)}</span>`;
       }).join('')
     }</div>` + (staleNote ? `<div class="players-status" style="margin-top:0.5rem;font-size:0.7rem;">${staleNote}</div>` : '');
   }
@@ -875,7 +882,7 @@
     const cached = playersCache[serverId];
     if (cached) {
       // Show cached data immediately while we check for an update in the background.
-      renderPlayersInto(content, cached.players, null);
+      renderPlayersInto(content, cached.players, null, serverId);
     } else {
       content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
     }
@@ -892,7 +899,7 @@
         // Log the raw shape so it can be inspected in the browser console.
         console.warn('[players] Unrecognized response shape for', serverId, data);
         if (cached) {
-          renderPlayersInto(content, cached.players, 'Could not parse the latest response &mdash; showing last known list.');
+          renderPlayersInto(content, cached.players, 'Could not parse the latest response &mdash; showing last known list.', serverId);
         } else if ((playersRetryCounts[serverId] || 0) < PLAYERS_RETRY_LIMIT) {
           playersRetryCounts[serverId] = (playersRetryCounts[serverId] || 0) + 1;
           content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
@@ -906,12 +913,12 @@
       // Cache the fresh result and re-render only this instance (panel may still be open).
       playersCache[serverId] = { players, ts: Date.now() };
       if (panel.classList.contains('open')) {
-        renderPlayersInto(content, players, null);
+        renderPlayersInto(content, players, null, serverId);
       }
     } catch (e) {
       console.error('Failed to fetch players:', e);
       if (cached) {
-        renderPlayersInto(content, cached.players, 'Could not refresh just now &mdash; showing last known list.');
+        renderPlayersInto(content, cached.players, 'Could not refresh just now &mdash; showing last known list.', serverId);
       } else {
         content.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
       }
@@ -925,6 +932,21 @@
   }
 
   init();
+
+window.addEventListener('popstate', route);
+function route(){
+ const path=location.pathname.replace(/^\/+/, '');
+ if(path==='servers') showPage('servers',false);
+ else if(path==='team') showPage('team',false);
+ else if(path==='programs') showPage('programs',false);
+ else if(path.startsWith('server/')){
+   showPage('servers',false);
+   const id=path.split('/')[1];
+   const t=setInterval(()=>{if(allServers.length){clearInterval(t);openServerModal(id);}},250);
+ } else showPage('home',false);
+}
+route();
+
 </script>
 </body>
 </html>
