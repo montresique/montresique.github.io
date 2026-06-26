@@ -635,7 +635,8 @@
       const res = await fetch(PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
+        cache: 'no-store'
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
@@ -881,7 +882,7 @@
     if (btn) btn.disabled = true;
 
     try {
-      const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(serverId));
+      const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(serverId), { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
 
