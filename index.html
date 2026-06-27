@@ -532,6 +532,7 @@
   let serversLoaded = false;
   let refreshTimer = null;
   let playersCache = {}; // server_id -> { players: [...], ts: Number, errored: Boolean }
+  let pendingModalServerId = null; // set by the router if ?server=ID was requested before servers loaded
 
   async function init() {
     const year = new Date().getFullYear();
@@ -560,13 +561,29 @@
     refreshTimer = setInterval(loadServers, REFRESH_MS);
   }
 
+  // ── Query-param routing (?tab=servers, ?server=SERVER_ID) ──
+  // Works on a single static index.html with no server-side routing needed,
+  // which is required for GitHub Pages (path-based routes 404 on refresh/direct link).
+  const VALID_TABS = ['home', 'servers', 'team', 'programs'];
+
   function showPage(id, push = true) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     document.getElementById('nav-' + id).classList.add('active');
-    if(push){history.pushState({},'', id==='home' ? '/' : '/'+id);}
-    window.scrollTo(0,0);
+    if (push) {
+      const params = new URLSearchParams(location.search);
+      if (id === 'home') {
+        params.delete('tab');
+      } else {
+        params.set('tab', id);
+      }
+      // Switching tabs explicitly leaves any open server modal behind.
+      params.delete('server');
+      const qs = params.toString();
+      history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    }
+    window.scrollTo(0, 0);
   }
 
   function roleColor(role) { return rolesMap[role] || '#c8a0ff'; }
@@ -692,6 +709,12 @@
       lastServersSignature = sig;
       renderServers();
     }
+
+    // If a deep-link (?server=ID) was requested before the server list finished loading, open it now.
+    if (pendingModalServerId && allServers.some(s => s.server_id === pendingModalServerId)) {
+      openServerModal(pendingModalServerId, false);
+      pendingModalServerId = null;
+    }
   }
 
   function updateNavDot(s) {
@@ -739,10 +762,7 @@
 
       const card = document.createElement('div');
       card.className = 'server-card' + (isFeatured ? ' featured' : '');
-      card.onclick = () => {
-        history.pushState({}, '', '/server/' + s.server_id);
-        openServerModal(s.server_id);
-      };
+      card.onclick = () => openServerModal(s.server_id);
       card.innerHTML = `
         <div class="server-top">
           <div class="server-name">
@@ -777,7 +797,7 @@
   }
 
   // SERVER MODAL
-  function openServerModal(serverId) {
+  function openServerModal(serverId, push = true) {
     const s = allServers.find(x => x.server_id === serverId);
     if (!s) return;
     const isFeatured = s.server_id === siteData?.main_server_id;
@@ -814,8 +834,23 @@
       </div>
     `;
     document.getElementById('server-modal').classList.add('open');
+
+    if (push) {
+      const params = new URLSearchParams(location.search);
+      params.set('tab', 'servers');
+      params.set('server', serverId);
+      history.pushState({}, '', location.pathname + '?' + params.toString());
+    }
   }
-  function closeServerModal() { document.getElementById('server-modal').classList.remove('open'); }
+  function closeServerModal(push = true) {
+    document.getElementById('server-modal').classList.remove('open');
+    if (push) {
+      const params = new URLSearchParams(location.search);
+      params.delete('server');
+      const qs = params.toString();
+      history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    }
+  }
   function closeServerModalOutside(e) { if (e.target.id === 'server-modal') closeServerModal(); }
 
   // PLAYERS LIST (cached per server_id; reused across home / card / modal instances)
@@ -831,7 +866,7 @@
       players.map(p => {
         const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
         const isOwner = owner && name.trim().toLowerCase() === owner;
-        return `<span class="player-chip"><span class="dot"></span>${isOwner ? '<span style="color:#FFD700;">👑</span>' : ''}${esc(name)}</span>`;
+        return `<span class="player-chip"><span class="dot"></span>${isOwner ? '<span style="color:#FFD700;">&#128081;</span>' : ''}${esc(name)}</span>`;
       }).join('')
     }</div>` + (staleNote ? `<div class="players-status" style="margin-top:0.5rem;font-size:0.7rem;">${staleNote}</div>` : '');
   }
@@ -931,22 +966,31 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Router: reads ?tab= and ?server= from the URL and reflects them in the UI ──
+  function route(push = false) {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const serverId = params.get('server');
+
+    const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
+    showPage(targetTab, false); // never push here; we're reading the URL, not writing it
+
+    if (serverId) {
+      if (allServers.length) {
+        openServerModal(serverId, false);
+      } else {
+        // Server list hasn't loaded yet — loadServers() will open it once available.
+        pendingModalServerId = serverId;
+      }
+    } else {
+      closeServerModal(false);
+    }
+  }
+
+  window.addEventListener('popstate', () => route(false));
+
   init();
-
-window.addEventListener('popstate', route);
-function route(){
- const path=location.pathname.replace(/^\/+/, '');
- if(path==='servers') showPage('servers',false);
- else if(path==='team') showPage('team',false);
- else if(path==='programs') showPage('programs',false);
- else if(path.startsWith('server/')){
-   showPage('servers',false);
-   const id=path.split('/')[1];
-   const t=setInterval(()=>{if(allServers.length){clearInterval(t);openServerModal(id);}},250);
- } else showPage('home',false);
-}
-route();
-
+  route(false);
 </script>
 </body>
 </html>
