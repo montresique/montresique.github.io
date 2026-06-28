@@ -671,12 +671,36 @@
     return merged;
   }
 
-  // Builds an in-site link for an override's "domain" field: ?server=<domain value>
-  // (kept on this same site/page, reusing the existing query-param router).
+  // Builds an in-site link for an override's "domain" field.
+  // Accepts either:
+  //   "domain": "SOME_CODE"                                  -> https://montresique.github.io/?server=SOME_CODE
+  //   "domain": "https://montresique.github.io/?server=CODE" -> normalized down to just ?server=CODE
+  // Domain links never include ?tab=servers — only ?server=... per spec.
   function domainHref(s) {
-    const domain = s?._override?.domain;
-    if (!domain) return null;
-    return location.pathname + '?server=' + encodeURIComponent(domain);
+    const raw = s?._override?.domain;
+    if (!raw) return null;
+
+    const looksLikeFullUrl = /^https?:\/\//i.test(raw);
+
+    if (!looksLikeFullUrl) {
+      // Bare code/slug — wrap it directly.
+      return location.pathname + '?server=' + encodeURIComponent(raw);
+    }
+
+    // Full URL: pull the "server" param back out and rebuild cleanly so the
+    // result is guaranteed to be just ?server=... with nothing else (no ?tab=).
+    try {
+      const asUrl = new URL(raw);
+      const serverParam = asUrl.searchParams.get('server');
+      if (serverParam) {
+        return location.pathname + '?server=' + encodeURIComponent(serverParam);
+      }
+      // A full URL with no ?server= in it (a genuinely different external link) — use as-is.
+      return raw;
+    } catch (e) {
+      // Malformed URL string — fall back to treating it as a literal slug.
+      return location.pathname + '?server=' + encodeURIComponent(raw);
+    }
   }
 
   // SERVERS
