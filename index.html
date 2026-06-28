@@ -528,6 +528,7 @@
 
   let siteData    = null;
   let rolesMap     = {};
+  let overridesMap = {}; // server_id -> { owners?: string|string[], domain?: string, ...any field to override }
   let allServers   = [];
   let serversLoaded = false;
   let refreshTimer = null;
@@ -546,6 +547,19 @@
       console.error('Failed to load JSON data', e);
       siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
       rolesMap = {};
+    }
+
+    // override.json is optional — a missing file or 404 is fine, just means no overrides.
+    try {
+      const oRes = await fetch('override.json', { cache: 'no-store' });
+      if (oRes.ok) {
+        overridesMap = await oRes.json();
+      } else {
+        overridesMap = {};
+      }
+    } catch (e) {
+      console.warn('No override.json found (or failed to load) — continuing without overrides.', e);
+      overridesMap = {};
     }
 
     if (siteData.discord_invite) {
@@ -639,6 +653,32 @@
     });
   }
 
+  // OVERRIDES
+  // override.json shape: { "SERVER_ID": { "owners": "Owner, Player, Server", "domain": "custom-page-slug", ... } }
+  // "owners" replaces the displayed admin/owner text (website display only — never sent anywhere).
+  // "domain", if set, renders a link to ?server=<domain value> alongside the Discord link.
+  // Any other field present in the override object replaces that same field on the server object
+  // (e.g. you could override "description" or "server_name" too) — purely client-side display.
+  function applyOverride(server) {
+    const override = overridesMap[server.server_id];
+    if (!override) return server;
+    const merged = { ...server, ...override, _override: override };
+    // "owners" is the friendly field name in override.json; it drives the same
+    // "Admin:" display that admin_name normally drives.
+    if (override.owners !== undefined) {
+      merged.admin_name = Array.isArray(override.owners) ? override.owners.join(', ') : override.owners;
+    }
+    return merged;
+  }
+
+  // Builds an in-site link for an override's "domain" field: ?server=<domain value>
+  // (kept on this same site/page, reusing the existing query-param router).
+  function domainHref(s) {
+    const domain = s?._override?.domain;
+    if (!domain) return null;
+    return location.pathname + '?server=' + encodeURIComponent(domain);
+  }
+
   // SERVERS
   let lastServersSignature = null;
 
@@ -678,7 +718,7 @@
       const fresh = raw.filter(s => {
         if (seen.has(s.server_id)) return false;
         seen.add(s.server_id); return true;
-      });
+      }).map(applyOverride);
 
       const featuredId = siteData?.main_server_id;
       fresh.sort((a, b) => {
@@ -728,8 +768,9 @@
     el.innerHTML = `
       <div class="main-server-name">${esc(s.server_name || 'Unnamed')}</div>
       <div class="main-server-desc">${esc(s.description || '')}</div>
-      <div style="margin-top:0.9rem;">
+      <div style="margin-top:0.9rem;display:flex;gap:0.5rem;align-items:center;">
         <button class="players-btn" id="players-toggle-btn-home" onclick="togglePlayersPanel('${esc(s.server_id)}', 'home')">List Players</button>
+        ${domainHref(s) ? `<a class="discord-link" href="${esc(domainHref(s))}">Page</a>` : ''}
       </div>
       <div class="players-panel" id="players-panel-home">
         <div class="players-panel-title">Online Players</div>
@@ -784,6 +825,7 @@
           <span class="status-text status-${sc}">${st}</span>
           <div style="display:flex;gap:0.5rem;align-items:center;">
             <button class="players-btn" id="players-toggle-btn-card-${esc(s.server_id)}" onclick="event.stopPropagation(); togglePlayersPanel('${esc(s.server_id)}', 'card-${esc(s.server_id)}')">List Players</button>
+            ${domainHref(s) ? `<a class="discord-link" href="${esc(domainHref(s))}" onclick="event.stopPropagation()">Page</a>` : ''}
             ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Discord</a>` : ''}
           </div>
         </div>
@@ -825,6 +867,7 @@
         <span class="status-text status-${sc}">${st}</span>
         <div style="display:flex;gap:0.5rem;align-items:center;">
           <button class="players-btn" id="players-toggle-btn-modal" onclick="togglePlayersPanel('${esc(s.server_id)}', 'modal')">List Players</button>
+          ${domainHref(s) ? `<a class="discord-link" href="${esc(domainHref(s))}">Page</a>` : ''}
           ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
         </div>
       </div>
