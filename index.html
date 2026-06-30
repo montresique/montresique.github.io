@@ -854,9 +854,95 @@
   function closeServerModalOutside(e) { if (e.target.id === 'server-modal') closeServerModal(); }
 
   // PLAYERS LIST (cached per server_id; reused across home / card / modal instances)
+  // PLAYER TAG PARSING (Luanti/Minetest color-coded tags)
+  // Tags look like: "\u001b(c@COLOR)[\u001b(c@COLOR)text...]\u001b(c@COLOR) Name\u001b(c@COLOR)"
+  // We only want the "[...]" bracket portion (with its colors preserved as HTML), never the
+  // name baked into the tag — the display name always comes from the player's "name" field.
+  const LUANTI_ESC = '\u001b';
+  const LUANTI_NAMED_COLORS = { black: '#000000', maroon: '#800000', white: '#ffffff', red: '#ff0000' };
+
+  function resolveLuantiColor(raw) {
+    if (!raw) return null;
+    if (raw.startsWith('#')) return raw;
+    return LUANTI_NAMED_COLORS[raw.toLowerCase()] || raw; // many CSS color names work as-is too
+  }
+
+  // Splits a Luanti-formatted string into { color, text } runs at each \u001b(c@COLOR) marker.
+  function tokenizeLuantiColorRuns(str) {
+    const runs = [];
+    let currentColor = null;
+    let i = 0;
+    while (i < str.length) {
+      if (str[i] === LUANTI_ESC && str[i + 1] === '(') {
+        const close = str.indexOf(')', i);
+        if (close === -1) break; // malformed tail, stop parsing
+        const inside = str.slice(i + 2, close);
+        const match = inside.match(/^c@(.+)$/);
+        if (match) currentColor = match[1];
+        i = close + 1;
+        continue;
+      }
+      let next = str.indexOf(LUANTI_ESC, i);
+      if (next === -1) next = str.length;
+      const text = str.slice(i, next);
+      if (text.length > 0) runs.push({ color: currentColor, text });
+      i = next;
+    }
+    return runs;
+  }
+
+  // Extracts just the "[...]" bracket portion of a tag as HTML with colors preserved.
+  // Returns null if the tag has no bracket section (or no tag at all).
+  function extractTagBracketHtml(tag) {
+    if (!tag) return null;
+    const runs = tokenizeLuantiColorRuns(tag);
+
+    let plain = '';
+    const boundaries = [];
+    runs.forEach((r, idx) => {
+      boundaries.push({ idx, start: plain.length, end: plain.length + r.text.length });
+      plain += r.text;
+    });
+
+    const openIdx = plain.indexOf('[');
+    const closeIdx = plain.indexOf(']', openIdx);
+    if (openIdx === -1 || closeIdx === -1) return null;
+
+    let html = '';
+    for (const b of boundaries) {
+      const segStart = Math.max(b.start, openIdx);
+      const segEnd = Math.min(b.end, closeIdx + 1);
+      if (segStart >= segEnd) continue;
+      const text = plain.slice(segStart, segEnd);
+      const color = resolveLuantiColor(runs[b.idx].color);
+      html += color ? `<span style="color:${esc(color)}">${esc(text)}</span>` : esc(text);
+    }
+    return html;
+  }
+
+  const GENDER_EMOJI = {
+    admin: '\u{1F451}', // 👑
+    boy:   '\u{1F466}', // 👦
+    girl:  '\u{1F467}', // 👧
+  };
+
+  // Builds the inner HTML for one player chip: "<emoji> [tag] Name", omitting any
+  // part that isn't present (no gender -> no emoji, no bracket in tag -> no bracket).
+  function formatPlayerChipHtml(p) {
+    if (typeof p === 'string') return esc(p);
+    const name = p?.name || p?.username || p?.player_name || 'Unknown';
+    const genderKey = (p?.gender || '').toLowerCase();
+    const emoji = genderKey ? (GENDER_EMOJI[genderKey] || '') : '';
+    const bracketHtml = extractTagBracketHtml(p?.tag);
+
+    let out = '';
+    if (emoji) out += `<span>${emoji}</span> `;
+    if (bracketHtml) out += bracketHtml + ' ';
+    out += esc(name);
+    return out;
+  }
+
   function renderPlayersInto(contentEl, players, staleNote, serverId) {
-    const server = allServers.find(s => s.server_id === serverId);
-    const owner = server?.admin_name?.trim().toLowerCase();
     if (players.length === 0) {
       contentEl.innerHTML = '<div class="players-status">No players currently online.</div>'
         + (staleNote ? `<div class="players-status" style="margin-top:0.3rem;font-size:0.7rem;">${staleNote}</div>` : '');
@@ -864,9 +950,7 @@
     }
     contentEl.innerHTML = `<div class="players-list">${
       players.map(p => {
-        const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
-        const isOwner = owner && name.trim().toLowerCase() === owner;
-        return `<span class="player-chip"><span class="dot"></span>${isOwner ? '<span style="color:#FFD700;">&#128081;</span>' : ''}${esc(name)}</span>`;
+        return `<span class="player-chip"><span class="dot"></span>${formatPlayerChipHtml(p)}</span>`;
       }).join('')
     }</div>` + (staleNote ? `<div class="players-status" style="margin-top:0.5rem;font-size:0.7rem;">${staleNote}</div>` : '');
   }
