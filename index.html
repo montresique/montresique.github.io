@@ -326,7 +326,56 @@
     .modal-desc { font-size: 0.87rem; color: var(--text); line-height: 1.8; white-space: pre-line; margin-bottom: 1.2rem; }
     .modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 
-    /* PLAYERS PANEL (inside server modal) */
+    /* PLAYERS OVERLAY MODAL */
+    .players-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1100;
+      background: rgba(5,5,10,0.8); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center; padding: 2rem;
+    }
+    .players-overlay.open { display: flex; }
+    .players-modal {
+      background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
+      width: 100%; max-width: 480px; max-height: 70vh;
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    .players-modal-header {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
+      background: var(--card); flex-shrink: 0;
+    }
+    .players-modal-header img { width: 20px; height: 20px; object-fit: contain; }
+    .players-modal-title { font-size: 1rem; color: #fff; flex: 1; }
+    .players-modal-count { font-size: 1rem; }
+    .players-modal-count .count-cur { color: var(--green); }
+    .players-modal-count .count-sep { color: var(--muted); }
+    .players-modal-count .count-max { color: var(--cyan); }
+    .players-modal-close {
+      background: none; border: 1px solid rgba(255,68,102,0.4); border-radius: 6px;
+      color: var(--red); font-size: 1rem; cursor: pointer; padding: 0.2rem 0.5rem;
+      line-height: 1; transition: background 0.2s;
+    }
+    .players-modal-close:hover { background: rgba(255,68,102,0.15); }
+    .players-modal-body {
+      overflow-y: auto; flex: 1; padding: 0.6rem;
+      scrollbar-width: thin; scrollbar-color: var(--violet-d) transparent;
+    }
+    .players-modal-body::-webkit-scrollbar { width: 6px; }
+    .players-modal-body::-webkit-scrollbar-track { background: transparent; }
+    .players-modal-body::-webkit-scrollbar-thumb { background: var(--violet-d); border-radius: 3px; }
+    .player-row {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.5rem 0.75rem; border-radius: 8px;
+      background: rgba(255,255,255,0.03); margin-bottom: 0.35rem;
+      border: 1px solid var(--border);
+    }
+    .player-row:last-child { margin-bottom: 0; }
+    .player-row-icon { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+    .player-row-tag { font-size: 0.82rem; flex-shrink: 0; }
+    .player-row-name { font-size: 0.85rem; }
+    .players-status { font-size: 0.82rem; color: var(--muted); text-align: center; padding: 1.5rem; }
+    .players-status.is-error { color: var(--red); }
+
+    /* "List Players" button stays the same style */
     .players-btn {
       font-family: 'MultiCraftFont', monospace;
       font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
@@ -336,24 +385,6 @@
     }
     .players-btn:hover { background: rgba(200,160,255,0.16); }
     .players-btn:disabled { opacity: 0.5; cursor: default; }
-    .players-panel {
-      margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);
-      display: none;
-    }
-    .players-panel.open { display: block; }
-    .players-panel-title {
-      font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 0.6rem;
-    }
-    .players-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .player-chip {
-      font-size: 0.78rem; color: var(--text); background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border); border-radius: 4px; padding: 0.25rem 0.6rem;
-      display: flex; align-items: center; gap: 0.4rem;
-    }
-    .player-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 4px var(--green); flex-shrink:0; }
-    .players-status { font-size: 0.82rem; color: var(--muted); }
-    .players-status.is-error { color: var(--red); }
 
     /* MODAL: discord profile */
     .dc-card {
@@ -482,7 +513,7 @@
     <input class="search-box" type="text" id="server-search" placeholder="Search servers&hellip;" oninput="renderServers()" />
   </div>
   <div id="servers-loading" class="loading-state"><div class="spinner"></div>Fetching servers&hellip;</div>
-  <div id="servers-empty"  class="empty-state" style="display:none;">No servers found. (If this shows for you, just wait for a bit. It will display eventually.)</div>
+  <div id="servers-empty"  class="empty-state" style="display:none;">Searching for servers..</div>
   <div class="servers-grid" id="servers-grid"></div>
   <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-servers"></span> &middot; Powered by area12.lol</footer>
 </div>
@@ -513,6 +544,23 @@
   <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-programs"></span> &middot; Powered by area12.lol</footer>
 </div>
 
+<!-- PLAYERS OVERLAY MODAL -->
+<div class="players-overlay" id="players-overlay" onclick="closePlayersOverlayOutside(event)">
+  <div class="players-modal">
+    <div class="players-modal-header">
+      <img src="assets/online.png" alt="" />
+      <span class="players-modal-title">Players online:</span>
+      <span class="players-modal-count">
+        <span class="count-cur" id="players-overlay-cur">0</span>
+        <span class="count-sep"> / </span>
+        <span class="count-max" id="players-overlay-max">?</span>
+      </span>
+      <button class="players-modal-close" onclick="closePlayersOverlay()">&times;</button>
+    </div>
+    <div class="players-modal-body" id="players-overlay-body"></div>
+  </div>
+</div>
+
 <!-- SERVER MODAL -->
 <div class="modal-overlay" id="server-modal" onclick="closeServerModalOutside(event)">
   <div class="modal-box" id="server-modal-box"></div>
@@ -539,7 +587,7 @@
     document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
 
     try {
-      const [dRes, rRes] = await Promise.all([fetch('data.json'), fetch('roles.json')]);
+      const [dRes, rRes] = await Promise.all([fetch('data/data.json'), fetch('data/roles.json')]);
       siteData = await dRes.json();
       rolesMap = await rRes.json();
     } catch(e) {
@@ -729,11 +777,7 @@
       <div class="main-server-name">${esc(s.server_name || 'Unnamed')}</div>
       <div class="main-server-desc">${esc(s.description || '')}</div>
       <div style="margin-top:0.9rem;display:flex;gap:0.5rem;align-items:center;">
-        <button class="players-btn" id="players-toggle-btn-home" onclick="togglePlayersPanel('${esc(s.server_id)}', 'home')">List Players</button>
-      </div>
-      <div class="players-panel" id="players-panel-home">
-        <div class="players-panel-title">Online Players</div>
-        <div id="players-content-home"></div>
+        <button class="players-btn" id="players-toggle-btn-home" onclick="openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
       </div>
     `;
   }
@@ -783,13 +827,9 @@
         <div class="server-footer">
           <span class="status-text status-${sc}">${st}</span>
           <div style="display:flex;gap:0.5rem;align-items:center;">
-            <button class="players-btn" id="players-toggle-btn-card-${esc(s.server_id)}" onclick="event.stopPropagation(); togglePlayersPanel('${esc(s.server_id)}', 'card-${esc(s.server_id)}')">List Players</button>
+            <button class="players-btn" id="players-toggle-btn-card-${esc(s.server_id)}" onclick="event.stopPropagation(); openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
             ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Discord</a>` : ''}
           </div>
-        </div>
-        <div class="players-panel" id="players-panel-card-${esc(s.server_id)}" onclick="event.stopPropagation()">
-          <div class="players-panel-title">Online Players</div>
-          <div id="players-content-card-${esc(s.server_id)}"></div>
         </div>
       `;
       grid.appendChild(card);
@@ -824,13 +864,9 @@
       <div class="modal-footer">
         <span class="status-text status-${sc}">${st}</span>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <button class="players-btn" id="players-toggle-btn-modal" onclick="togglePlayersPanel('${esc(s.server_id)}', 'modal')">List Players</button>
+          <button class="players-btn" onclick="openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
           ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
         </div>
-      </div>
-      <div class="players-panel" id="players-panel-modal">
-        <div class="players-panel-title">Online Players</div>
-        <div id="players-content-modal"></div>
       </div>
     `;
     document.getElementById('server-modal').classList.add('open');
@@ -931,40 +967,86 @@
     return { bracketHtml, nameColor };
   }
 
-  const GENDER_EMOJI = {
-    admin: '\u{1F451}', // 👑
-    boy:   '\u{1F466}', // 👦
-    girl:  '\u{1F467}', // 👧
+  const GENDER_ICONS = {
+    admin: 'assets/crown.png',
+    boy:   'assets/gender_boy.png',
+    girl:  'assets/gender_girl.png',
   };
 
-  function formatPlayerChipHtml(p) {
-    if (typeof p === 'string') return esc(p);
-    const name = p?.name || p?.username || p?.player_name || 'Unknown';
-    const genderKey = (p?.gender || '').toLowerCase();
-    const emoji = genderKey ? (GENDER_EMOJI[genderKey] || '') : '';
-    const { bracketHtml, nameColor } = parseTag(p?.tag);
+  // Builds one player-row HTML using the new overlay row style.
+  function buildPlayerRowHtml(p) {
+    const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
+    const genderKey = typeof p === 'string' ? '' : (p?.gender || '').toLowerCase();
+    const iconSrc = genderKey ? (GENDER_ICONS[genderKey] || null) : null;
+    const { bracketHtml, nameColor } = typeof p === 'string' ? { bracketHtml: null, nameColor: null } : parseTag(p?.tag);
     const nameHtml = nameColor
-      ? `<span style="color:${esc(nameColor)}">${esc(name)}</span>`
-      : esc(name);
-
-    let out = '';
-    if (emoji) out += emoji + ' ';
-    if (bracketHtml) out += bracketHtml + ' ';
-    out += nameHtml;
-    return out;
+      ? `<span class="player-row-name" style="color:${esc(nameColor)}">${esc(name)}</span>`
+      : `<span class="player-row-name">${esc(name)}</span>`;
+    const iconHtml = iconSrc
+      ? `<img class="player-row-icon" src="${esc(iconSrc)}" alt="" />`
+      : '';
+    const tagHtml = bracketHtml ? `<span class="player-row-tag">${bracketHtml}</span>` : '';
+    return `<div class="player-row">${iconHtml}${tagHtml}${nameHtml}</div>`;
   }
 
-  function renderPlayersInto(contentEl, players, staleNote, serverId) {
-    if (players.length === 0) {
-      contentEl.innerHTML = '<div class="players-status">No players currently online.</div>'
-        + (staleNote ? `<div class="players-status" style="margin-top:0.3rem;font-size:0.7rem;">${staleNote}</div>` : '');
-      return;
+  // PLAYERS OVERLAY
+  let currentPlayersServerId = null;
+
+  async function openPlayersOverlay(serverId) {
+    const overlay = document.getElementById('players-overlay');
+    const body    = document.getElementById('players-overlay-body');
+    const elCur   = document.getElementById('players-overlay-cur');
+    const elMax   = document.getElementById('players-overlay-max');
+
+    currentPlayersServerId = serverId;
+    overlay.classList.add('open');
+
+    // Show cached data immediately if available
+    const cached = playersCache[serverId];
+    const server = allServers.find(s => s.server_id === serverId);
+    elCur.textContent = cached ? cached.players.length : (server?.connected_players ?? 0);
+    elMax.textContent = server?.max_players ?? '?';
+
+    if (cached) {
+      body.innerHTML = cached.players.map(buildPlayerRowHtml).join('') || '<div class="players-status">No players currently online.</div>';
+    } else {
+      body.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
     }
-    contentEl.innerHTML = `<div class="players-list">${
-      players.map(p => {
-        return `<span class="player-chip"><span class="dot"></span>${formatPlayerChipHtml(p)}</span>`;
-      }).join('')
-    }</div>` + (staleNote ? `<div class="players-status" style="margin-top:0.5rem;font-size:0.7rem;">${staleNote}</div>` : '');
+
+    try {
+      const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(serverId), { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const players = extractPlayersList(data);
+
+      if (!players) {
+        console.warn('[players] Unrecognized response shape for', serverId, data);
+        if (!cached) body.innerHTML = '<div class="players-status is-error">Could not read player data.</div>';
+        return;
+      }
+
+      // Also pull max_players from the response if available
+      if (data?.max_players != null) elMax.textContent = data.max_players;
+
+      playersCache[serverId] = { players, ts: Date.now() };
+
+      // Only update if this overlay is still showing this server
+      if (currentPlayersServerId !== serverId) return;
+      elCur.textContent = players.length;
+      body.innerHTML = players.map(buildPlayerRowHtml).join('') || '<div class="players-status">No players currently online.</div>';
+
+    } catch (e) {
+      console.error('Failed to fetch players:', e);
+      if (!cached) body.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
+    }
+  }
+
+  function closePlayersOverlay() {
+    document.getElementById('players-overlay').classList.remove('open');
+    currentPlayersServerId = null;
+  }
+  function closePlayersOverlayOutside(e) {
+    if (e.target.id === 'players-overlay') closePlayersOverlay();
   }
 
   // Tries a wide range of likely response shapes. Returns an array (possibly empty) or null if unrecognized.
@@ -975,87 +1057,13 @@
       for (const key of candidateKeys) {
         if (Array.isArray(data[key])) return data[key];
       }
-      // Object keyed by id/name, e.g. { "Steve": {...}, "Alex": {...} } or { "0": "Steve", "1": "Alex" }
       const values = Object.values(data);
       if (values.length > 0 && values.every(v => typeof v === 'string' || (v && typeof v === 'object'))) {
-        // Only treat as a player map if it doesn't look like a known non-list status object
         const looksLikeStatusObject = ('online' in data) || ('error' in data) || ('success' in data);
         if (!looksLikeStatusObject) return values;
       }
     }
     return null;
-  }
-
-  const PLAYERS_RETRY_LIMIT = 2;
-  let playersRetryCounts = {};
-
-  async function togglePlayersPanel(serverId, instanceKey) {
-    const panel = document.getElementById('players-panel-' + instanceKey);
-    if (!panel) return;
-
-    const isOpen = panel.classList.contains('open');
-    if (isOpen) {
-      panel.classList.remove('open');
-      return;
-    }
-
-    panel.classList.add('open');
-    playersRetryCounts[serverId] = 0;
-    fetchPlayersForInstance(serverId, instanceKey);
-  }
-
-  async function fetchPlayersForInstance(serverId, instanceKey) {
-    const panel   = document.getElementById('players-panel-' + instanceKey);
-    const content = document.getElementById('players-content-' + instanceKey);
-    const btn     = document.getElementById('players-toggle-btn-' + instanceKey);
-    if (!panel || !panel.classList.contains('open')) return; // panel was closed before this ran
-
-    const cached = playersCache[serverId];
-    if (cached) {
-      // Show cached data immediately while we check for an update in the background.
-      renderPlayersInto(content, cached.players, null, serverId);
-    } else {
-      content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
-    }
-    if (btn) btn.disabled = true;
-
-    try {
-      const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(serverId), { cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-
-      const players = extractPlayersList(data);
-
-      if (!players) {
-        // Log the raw shape so it can be inspected in the browser console.
-        console.warn('[players] Unrecognized response shape for', serverId, data);
-        if (cached) {
-          renderPlayersInto(content, cached.players, 'Could not parse the latest response &mdash; showing last known list.', serverId);
-        } else if ((playersRetryCounts[serverId] || 0) < PLAYERS_RETRY_LIMIT) {
-          playersRetryCounts[serverId] = (playersRetryCounts[serverId] || 0) + 1;
-          content.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
-          setTimeout(() => fetchPlayersForInstance(serverId, instanceKey), 3000);
-        } else {
-          content.innerHTML = '<div class="players-status is-error">Could not read player data for this server.</div>';
-        }
-        return;
-      }
-
-      // Cache the fresh result and re-render only this instance (panel may still be open).
-      playersCache[serverId] = { players, ts: Date.now() };
-      if (panel.classList.contains('open')) {
-        renderPlayersInto(content, players, null, serverId);
-      }
-    } catch (e) {
-      console.error('Failed to fetch players:', e);
-      if (cached) {
-        renderPlayersInto(content, cached.players, 'Could not refresh just now &mdash; showing last known list.', serverId);
-      } else {
-        content.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
-      }
-    } finally {
-      if (btn) btn.disabled = false;
-    }
   }
 
   function esc(str) {
