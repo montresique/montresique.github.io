@@ -891,33 +891,44 @@
     return runs;
   }
 
-  // Extracts just the "[...]" bracket portion of a tag as HTML with colors preserved.
-  // Returns null if the tag has no bracket section (or no tag at all).
-  function extractTagBracketHtml(tag) {
-    if (!tag) return null;
+  // Extracts both the colored bracket HTML and the name color from a Luanti tag in one pass.
+  // Bracket HTML: the "[...]" portion with color spans preserved.
+  // Name color: the color of the first non-whitespace run after "]", applied to the name field.
+  function parseTag(tag) {
+    if (!tag) return { bracketHtml: null, nameColor: null };
     const runs = tokenizeLuantiColorRuns(tag);
-
     let plain = '';
-    const boundaries = [];
+    const bounds = [];
     runs.forEach((r, idx) => {
-      boundaries.push({ idx, start: plain.length, end: plain.length + r.text.length });
+      bounds.push({ idx, start: plain.length, end: plain.length + r.text.length });
       plain += r.text;
     });
-
     const openIdx = plain.indexOf('[');
     const closeIdx = plain.indexOf(']', openIdx);
-    if (openIdx === -1 || closeIdx === -1) return null;
+    if (openIdx === -1 || closeIdx === -1) return { bracketHtml: null, nameColor: null };
 
-    let html = '';
-    for (const b of boundaries) {
-      const segStart = Math.max(b.start, openIdx);
-      const segEnd = Math.min(b.end, closeIdx + 1);
-      if (segStart >= segEnd) continue;
-      const text = plain.slice(segStart, segEnd);
+    // Build bracket HTML
+    let bracketHtml = '';
+    for (const b of bounds) {
+      const s = Math.max(b.start, openIdx);
+      const e = Math.min(b.end, closeIdx + 1);
+      if (s >= e) continue;
+      const text = plain.slice(s, e);
       const color = resolveLuantiColor(runs[b.idx].color);
-      html += color ? `<span style="color:${esc(color)}">${esc(text)}</span>` : esc(text);
+      bracketHtml += color ? `<span style="color:${esc(color)}">${esc(text)}</span>` : esc(text);
     }
-    return html;
+
+    // Find the first non-whitespace run after "]" — that run's color is the name color.
+    let nameColor = null;
+    for (const b of bounds) {
+      if (b.end <= closeIdx + 1) continue; // still inside/at bracket
+      const text = plain.slice(b.start, b.end);
+      if (text.trim() === '') continue;    // skip the space between ] and name
+      nameColor = resolveLuantiColor(runs[b.idx].color);
+      break;
+    }
+
+    return { bracketHtml, nameColor };
   }
 
   const GENDER_EMOJI = {
@@ -926,19 +937,20 @@
     girl:  '\u{1F467}', // 👧
   };
 
-  // Builds the inner HTML for one player chip: "<emoji> [tag] Name", omitting any
-  // part that isn't present (no gender -> no emoji, no bracket in tag -> no bracket).
   function formatPlayerChipHtml(p) {
     if (typeof p === 'string') return esc(p);
     const name = p?.name || p?.username || p?.player_name || 'Unknown';
     const genderKey = (p?.gender || '').toLowerCase();
     const emoji = genderKey ? (GENDER_EMOJI[genderKey] || '') : '';
-    const bracketHtml = extractTagBracketHtml(p?.tag);
+    const { bracketHtml, nameColor } = parseTag(p?.tag);
+    const nameHtml = nameColor
+      ? `<span style="color:${esc(nameColor)}">${esc(name)}</span>`
+      : esc(name);
 
     let out = '';
-    if (emoji) out += `<span>${emoji}</span> `;
+    if (emoji) out += emoji + ' ';
     if (bracketHtml) out += bracketHtml + ' ';
-    out += esc(name);
+    out += nameHtml;
     return out;
   }
 
