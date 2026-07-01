@@ -1,5 +1,6 @@
 {
   "x9jm": [
-    { "type": "text", "value": "★", "color": "#0000ff", "title": "goat" }
+    { "type": "text", "value": "★", "color": "#0000ff", "title": "goat" },
+    { "type": "image", "value": "assets/online.png", "color": "#0000ff", "title": "son" }
   ]
 }
