@@ -3,6 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Montresique" />
+  <meta property="og:description" content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
+  <meta property="og:image" content="assets/logo.png" />
+  <meta property="og:url" content="https://montresique.github.io/" />
+  <meta property="og:site_name" content="Montresique" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Montresique" />
+  <meta name="twitter:description" content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
+  <meta name="twitter:image" content="assets/logo.png" />
   <title>Montresique [&#8499;]</title>
   <style>
     @font-face {
@@ -48,7 +65,7 @@
     }
     .nav-logo { font-size: 1.2rem; color: var(--violet); cursor: pointer; letter-spacing: 0.05em; }
     .nav-logo span { color: var(--text); }
-    .nav-links { display: flex; gap: 0.25rem; list-style: none; }
+    .nav-links { display: flex; gap: 0.25rem; list-style: none; flex-wrap: wrap; }
     .nav-links button {
       background: none; border: none; color: var(--muted);
       font-family: 'MultiCraftFont', monospace; font-size: 0.9rem;
@@ -193,14 +210,55 @@
     .leader-discord:hover { color: var(--cyan); }
 
     .servers-header { padding: 3rem 2rem 1rem; max-width: 1100px; margin: 0 auto; }
+
+    /* Filter bar (search + dropdowns + toggle chips) */
+    .filter-bar {
+      display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center;
+      margin-top: 1.2rem;
+    }
     .search-box {
-      display: block; width: 100%; max-width: 380px; background: var(--card);
+      display: block; width: 100%; max-width: 320px; background: var(--card);
       border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem 1rem;
       color: var(--text); font-family: 'MultiCraftFont', monospace; font-size: 0.86rem;
-      outline: none; margin-top: 1.2rem; transition: border-color 0.2s;
+      outline: none; transition: border-color 0.2s;
     }
     .search-box:focus { border-color: rgba(200,160,255,0.4); }
     .search-box::placeholder { color: var(--muted); }
+
+    .filter-select {
+      background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.55rem 0.8rem; color: var(--text); font-family: 'MultiCraftFont', monospace;
+      font-size: 0.82rem; outline: none; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .filter-select:focus { border-color: rgba(200,160,255,0.4); }
+
+    .filter-chip {
+      background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 0.5rem 0.95rem; color: var(--muted); font-family: 'MultiCraftFont', monospace;
+      font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem;
+    }
+    .filter-chip:hover { color: var(--text); border-color: rgba(200,160,255,0.3); }
+    .filter-chip.active {
+      color: var(--violet); border-color: rgba(200,160,255,0.5); background: rgba(200,160,255,0.1);
+    }
+    .filter-chip .chip-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.7;
+    }
+
+    .filter-clear {
+      background: none; border: 1px solid rgba(255,68,102,0.3); border-radius: 20px;
+      padding: 0.5rem 0.9rem; color: var(--red); font-family: 'MultiCraftFont', monospace;
+      font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .filter-clear:hover { background: rgba(255,68,102,0.1); }
+
+    .filter-status {
+      font-size: 0.76rem; color: var(--muted); margin-top: 0.7rem; letter-spacing: 0.03em;
+    }
+    .filter-status .hl { color: var(--violet); }
 
     .servers-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -225,6 +283,11 @@
       border: 1px solid rgba(0,229,255,0.3); color: var(--cyan); border-radius: 3px;
       padding: 0.1rem 0.4rem; margin-left: 0.4rem; vertical-align: middle;
     }
+    .unofficial-badge {
+      font-size: 0.58rem; letter-spacing: 0.1em; background: rgba(136,138,170,0.1);
+      border: 1px solid rgba(136,138,170,0.3); color: var(--muted); border-radius: 3px;
+      padding: 0.1rem 0.4rem; margin-left: 0.4rem; vertical-align: middle;
+    }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
     .status-dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
     .status-dot.offline { background: var(--red);   box-shadow: 0 0 6px var(--red); }
@@ -237,6 +300,7 @@
     .pill-hardcore { color: var(--red);   border-color: rgba(255,68,102,0.4);   background: rgba(255,68,102,0.1); }
     .pill-id       { color: var(--muted); border-color: rgba(136,138,170,0.2);  background: rgba(136,138,170,0.04); }
     .pill-premium  { color: var(--amber); border-color: rgba(255,179,71,0.25);  background: rgba(255,179,71,0.06); }
+    .pill-match    { color: var(--green); border-color: rgba(0,255,136,0.35);   background: rgba(0,255,136,0.08); }
 
     .server-admin { font-size: 0.79rem; color: var(--muted); }
     .server-admin span { color: var(--violet); }
@@ -295,6 +359,32 @@
     }
     .program-name { font-size: 1rem; color: #fff; margin-bottom: 0.55rem; }
     .program-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.7; }
+
+    /* NEWS */
+    .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; margin-top: 1.5rem; }
+    .news-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; cursor: pointer; transition: border-color 0.2s, transform 0.2s;
+      display: flex; flex-direction: column;
+    }
+    .news-card:hover { border-color: rgba(200,160,255,0.3); transform: translateY(-2px); }
+    .news-card-thumb {
+      width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--card2);
+      display: block;
+    }
+    .news-card-thumb.placeholder {
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(200,160,255,0.15); font-size: 2.4rem;
+    }
+    .news-card-body { padding: 1.1rem 1.3rem; }
+    .news-card-title { font-size: 1rem; color: #fff; margin-bottom: 0.4rem; }
+    .news-card-desc {
+      font-size: 0.8rem; color: var(--muted); line-height: 1.6;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .news-modal-desc { font-size: 0.87rem; color: var(--text); line-height: 1.85; white-space: pre-line; margin-bottom: 1.2rem; }
+    .news-modal-images { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1rem; }
+    .news-modal-images img { width: 100%; border-radius: 8px; display: block; border: 1px solid var(--border); }
 
     footer {
       border-top: 1px solid var(--border); padding: 1.6rem 2rem; text-align: center;
@@ -370,6 +460,9 @@
     }
     .player-row:last-child { margin-bottom: 0; }
     .player-row-icon { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; margin-right: 0.5rem; }
+    .player-row-badges { display: inline-flex; align-items: center; gap: 0; margin-right: 0.1rem; flex-shrink: 0; }
+    .player-row-badge { font-size: 0.85rem; text-shadow: 0 0 6px currentColor; flex-shrink: 0; }
+    .player-row-badge-img { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; vertical-align: middle; }
     .player-row-prefix { font-family: 'MultiCraftFont', monospace; font-size: 0.82rem; flex-shrink: 0; margin-right: 0.2rem; }
     .player-row-tag { font-size: 0.82rem; flex-shrink: 0; }
     .player-row-name { font-size: 0.85rem; }
@@ -422,6 +515,8 @@
       .section { padding: 3rem 1rem; }
       .servers-header { padding: 2rem 1rem 0.5rem; }
       .modal-box { padding: 1.4rem; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .search-box { max-width: none; }
     }
   </style>
 </head>
@@ -432,6 +527,8 @@
   <ul class="nav-links">
     <li><button onclick="showPage('home')"     id="nav-home"    class="active">Home</button></li>
     <li><button onclick="showPage('servers')"  id="nav-servers"><span class="nav-dot" id="nav-dot"></span>Servers</button></li>
+    <li><button onclick="showPage('allservers')" id="nav-allservers">All Servers</button></li>
+    <li><button onclick="showPage('news')"     id="nav-news">News</button></li>
     <li><button onclick="showPage('team')"     id="nav-team">Team</button></li>
     <li><button onclick="showPage('programs')" id="nav-programs">Programs</button></li>
   </ul>
@@ -506,17 +603,47 @@
   <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-home"></span> &middot; Powered by area12.lol</footer>
 </div>
 
-<!-- SERVERS -->
+<!-- SERVERS (official Montresique servers only) -->
 <div class="page" id="page-servers">
   <div class="servers-header">
     <div class="section-label">// Server List</div>
     <h2 class="section-title">Montresique's Servers</h2>
-    <input class="search-box" type="text" id="server-search" placeholder="Search servers&hellip;" oninput="renderServers()" />
+    <div class="filter-bar" id="filter-bar-servers"></div>
+    <div class="filter-status" id="filter-status-servers"></div>
   </div>
   <div id="servers-loading" class="loading-state"><div class="spinner"></div>Fetching servers&hellip;</div>
   <div id="servers-empty"  class="empty-state" style="display:none;">No servers found. (If this shows for you, just wait for a bit. It will display eventually.)</div>
   <div class="servers-grid" id="servers-grid"></div>
   <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-servers"></span> &middot; Powered by area12.lol</footer>
+</div>
+
+<!-- ALL SERVERS (every server returned by find-nearby-servers, not just official ones) -->
+<div class="page" id="page-allservers">
+  <div class="servers-header">
+    <div class="section-label">// Full Server List</div>
+    <h2 class="section-title">All Servers</h2>
+    <p style="color:var(--muted);font-size:0.83rem;margin-bottom:0.4rem;">
+      Every server we can currently see &mdash; not just official Montresique servers.
+    </p>
+    <div class="filter-bar" id="filter-bar-allservers"></div>
+    <div class="filter-status" id="filter-status-allservers"></div>
+  </div>
+  <div id="allservers-loading" class="loading-state"><div class="spinner"></div>Fetching servers&hellip;</div>
+  <div id="allservers-empty"  class="empty-state" style="display:none;">No servers found.</div>
+  <div class="servers-grid" id="allservers-grid"></div>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-allservers"></span> &middot; Powered by area12.lol</footer>
+</div>
+
+<!-- NEWS -->
+<div class="page" id="page-news">
+  <div class="section">
+    <div class="section-label">// Announcements</div>
+    <h2 class="section-title">News</h2>
+    <div id="news-loading" class="loading-state"><div class="spinner"></div>Fetching news&hellip;</div>
+    <div id="news-empty" class="empty-state" style="display:none;">No news posts yet.</div>
+    <div class="news-grid" id="news-grid"></div>
+  </div>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-news"></span> &middot; Powered by area12.lol</footer>
 </div>
 
 <!-- TEAM -->
@@ -567,6 +694,11 @@
   <div class="modal-box" id="server-modal-box"></div>
 </div>
 
+<!-- NEWS MODAL -->
+<div class="modal-overlay" id="news-modal" onclick="closeNewsModalOutside(event)">
+  <div class="modal-box" id="news-modal-box"></div>
+</div>
+
 <script>
   const REAL_MARK        = '\u2133'; // &#8499; &mdash; used to detect official Montresique servers
   const PROXY_URL_B64        = 'aHR0cHM6Ly9tdWx0aWNyYWZ0LXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAvcHJveHkvZmluZC1uZWFyYnktc2VydmVycw==';
@@ -575,26 +707,104 @@
   const PLAYERS_URL_BASE     = atob(PLAYERS_URL_BASE_B64);
   const REFRESH_MS       = 10000;
 
+  // ── News source config ──
+  // Reads from this same repo's /news folder (relative path).
+  // Folder layout expected:
+  //   news/manifest.json                     -> { "posts": ["post-name-1", "post-name-2", ...] }
+  //   news/post-name-1/post.json              -> { "name": "...", "description": "...", "images": ["image1.png", ...] }
+  //   news/post-name-1/image1.png ...
+  const NEWS_BASE_URL = 'news';
+
   let siteData    = null;
   let rolesMap     = {};
-  let allServers   = [];
+  let badgesData   = {};    // loaded from data/badges.json
+  let allServers   = [];       // official Montresique servers (marked with REAL_MARK)
+  let allServersFull = [];     // every server returned by the API, unfiltered
   let serversLoaded = false;
   let refreshTimer = null;
   let playersCache = {}; // server_id -> { players: [...], ts: Number, errored: Boolean }
   let pendingModalServerId = null; // set by the router if ?server=ID was requested before servers loaded
+  let newsPosts = [];     // [{ id, name, description, images }]
+  let newsLoaded = false;
+
+  // Montresique member lookup — built once siteData loads, used to badge players in the list.
+  // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
+  let montresiqueMemberSet = new Set();
+
+  function buildMemberLookup() {
+    montresiqueMemberSet = new Set();
+    const all = [...(siteData?.leadership || []), ...(siteData?.team || [])];
+    all.forEach(m => {
+      const key = (m.name || '').trim().toLowerCase();
+      if (key) montresiqueMemberSet.add(key);
+    });
+  }
+
+  function isMontresiqueMember(playerName) {
+    return montresiqueMemberSet.has((playerName || '').trim().toLowerCase());
+  }
+
+  // ── Custom player badges (data/badges.json) ──
+  // Assign ANY number of badges to ANY player name, independent of Montresique membership.
+  // Shape: { "playername": [ {badge}, {badge}, ... ], ... }
+  // Badge: { "type": "text", "value": "★", "color": "#ffb347", "title": "Top Donor" }
+  //     or { "type": "image", "value": "assets/badges/vip.png", "title": "VIP" }
+  let customBadgesMap = new Map();
+
+  function buildCustomBadgeLookup() {
+    customBadgesMap = new Map();
+    const raw = badgesData || {};
+    Object.keys(raw).forEach(name => {
+      const key = name.trim().toLowerCase();
+      const list = Array.isArray(raw[name]) ? raw[name] : [raw[name]];
+      customBadgesMap.set(key, list.filter(Boolean));
+    });
+  }
+
+  function getCustomBadges(playerName) {
+    return customBadgesMap.get((playerName || '').trim().toLowerCase()) || [];
+  }
+
+  // Renders a single badge as "[value]" (text) or a small icon (image), with the
+  // bracket + glyph colored using the badge's own color.
+  function badgeToHtml(cfg) {
+    const title = esc(cfg.title || '');
+    if (cfg.type === 'image' && cfg.value) {
+      return `<img class="player-row-badge-img" src="${esc(cfg.value)}" title="${title}" alt="${title}" />`;
+    }
+    const color = cfg.color || 'var(--violet)';
+    return `<span class="player-row-badge" style="color:${esc(color)}" title="${title}">[${esc(cfg.value || REAL_MARK)}]</span>&nbsp;`;
+  }
+
+  // ── Filter state, kept separately for the "servers" list and "allservers" list ──
+  function freshFilterState() {
+    return {
+      search: '',
+      sort: 'default',      // default | most | least
+      playerQuery: '',       // player name search
+      adminOnline: false,    // filter: any player with gender "admin" online
+      ownerOnline: false,    // filter: server's admin_name is online as a player
+    };
+  }
+  const filterState = {
+    servers: freshFilterState(),
+    allservers: freshFilterState(),
+  };
 
   async function init() {
     const year = new Date().getFullYear();
     document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
 
     try {
-      const [dRes, rRes] = await Promise.all([fetch('data/data.json'), fetch('data/roles.json')]);
+      const [dRes, rRes, bRes] = await Promise.all([fetch('data/data.json'), fetch('data/roles.json'), fetch('data/badges.json')]);
       siteData = await dRes.json();
       rolesMap = await rRes.json();
+      badgesData = await bRes.json();
     } catch(e) {
       console.error('Failed to load JSON data', e);
       siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
       rolesMap = {};
+      badgesData = {};
     }
 
     if (siteData.discord_invite) {
@@ -603,9 +813,14 @@
     }
 
     renderLeadership();
+    buildMemberLookup();
+    buildCustomBadgeLookup();
     renderTeam();
     renderPrograms();
+    renderFilterBar('servers');
+    renderFilterBar('allservers');
     loadServers();
+    loadNews();
 
     refreshTimer = setInterval(loadServers, REFRESH_MS);
   }
@@ -613,7 +828,7 @@
   // ── Query-param routing (?tab=servers, ?server=SERVER_ID) ──
   // Works on a single static index.html with no server-side routing needed,
   // which is required for GitHub Pages (path-based routes 404 on refresh/direct link).
-  const VALID_TABS = ['home', 'servers', 'team', 'programs'];
+  const VALID_TABS = ['home', 'servers', 'allservers', 'news', 'team', 'programs'];
 
   function showPage(id, push = true) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -629,6 +844,7 @@
       }
       // Switching tabs explicitly leaves any open server modal behind.
       params.delete('server');
+      params.delete('post');
       const qs = params.toString();
       history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
     }
@@ -688,8 +904,176 @@
     });
   }
 
-  // SERVERS
+  // ═══════════════════════ FILTER BAR (shared by servers + allservers) ═══════════════════════
+
+  function renderFilterBar(scope) {
+    const el = document.getElementById('filter-bar-' + scope);
+    if (!el) return;
+    el.innerHTML = `
+      <input class="search-box" type="text" placeholder="Search servers&hellip;"
+        id="search-${scope}" oninput="onFilterInput('${scope}')" />
+      <input class="search-box" type="text" placeholder="Search for a player&hellip;"
+        id="player-search-${scope}" oninput="onFilterInput('${scope}')" style="max-width:220px;" />
+      <select class="filter-select" id="sort-${scope}" onchange="onFilterInput('${scope}')">
+        <option value="default">Default Order</option>
+        <option value="most">Most Popular</option>
+        <option value="least">Least Popular</option>
+      </select>
+      <button class="filter-chip" id="chip-admin-${scope}" onclick="toggleChip('${scope}','adminOnline')">
+        <span class="chip-dot"></span>Admin Online
+      </button>
+      <button class="filter-chip" id="chip-owner-${scope}" onclick="toggleChip('${scope}','ownerOnline')">
+        <span class="chip-dot"></span>Owner Online
+      </button>
+      <button class="filter-clear" onclick="clearFilters('${scope}')">Clear Filters</button>
+    `;
+  }
+
+  function onFilterInput(scope) {
+    const st = filterState[scope];
+    st.search      = document.getElementById('search-' + scope).value;
+    st.playerQuery = document.getElementById('player-search-' + scope).value;
+    st.sort        = document.getElementById('sort-' + scope).value;
+    renderList(scope);
+  }
+
+  function toggleChip(scope, key) {
+    const st = filterState[scope];
+    st[key] = !st[key];
+    document.getElementById('chip-' + (key === 'adminOnline' ? 'admin' : 'owner') + '-' + scope)
+      .classList.toggle('active', st[key]);
+    renderList(scope);
+  }
+
+  function clearFilters(scope) {
+    filterState[scope] = freshFilterState();
+    document.getElementById('search-' + scope).value = '';
+    document.getElementById('player-search-' + scope).value = '';
+    document.getElementById('sort-' + scope).value = 'default';
+    document.getElementById('chip-admin-' + scope).classList.remove('active');
+    document.getElementById('chip-owner-' + scope).classList.remove('active');
+    renderList(scope);
+  }
+
+  // A server "matches" a player-name / admin-online / owner-online filter based on its
+  // cached player list (fetched via List Players / the players proxy). If we haven't
+  // fetched players for a server yet, we fetch them lazily so filters stay accurate.
+  function serverPlayerNames(server) {
+    const cached = playersCache[server.server_id];
+    if (!cached) return null; // unknown — not yet fetched
+    return cached.players.map(p => (typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || ''))).filter(Boolean);
+  }
+
+  function serverHasAdminOnline(server) {
+    const cached = playersCache[server.server_id];
+    if (!cached) return null;
+    return cached.players.some(p => typeof p === 'object' && (p?.gender || '').toLowerCase() === 'admin');
+  }
+
+  function serverHasOwnerOnline(server) {
+    const cached = playersCache[server.server_id];
+    if (!cached || !server.admin_name) return null;
+    const target = server.admin_name.toLowerCase();
+    return cached.players.some(p => {
+      const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || '');
+      return name.toLowerCase() === target;
+    });
+  }
+
+  // Ensures player data is cached for every server currently in `list`, so the
+  // player/admin/owner filters can evaluate against fresh data. Fires requests in
+  // parallel and re-renders once done (silently skips ones already cached).
+  const playersFetchInFlight = new Set();
+
+  async function ensurePlayersCachedFor(list, scope) {
+    const toFetch = list.filter(s => !playersCache[s.server_id] && !playersFetchInFlight.has(s.server_id));
+    if (toFetch.length === 0) return;
+
+    toFetch.forEach(s => playersFetchInFlight.add(s.server_id));
+
+    let gotAny = false;
+    await Promise.all(toFetch.map(async s => {
+      try {
+        const res = await fetch(PLAYERS_URL_BASE + encodeURIComponent(s.server_id), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const players = extractPlayersList(data);
+        if (players) {
+          playersCache[s.server_id] = { players, ts: Date.now() };
+          gotAny = true;
+        }
+      } catch (e) {
+        console.warn('Could not prefetch players for filter on', s.server_id, e);
+      } finally {
+        playersFetchInFlight.delete(s.server_id);
+      }
+    }));
+
+    if (gotAny) renderList(scope);
+  }
+
+  function applyFilters(list, scope) {
+    const st = filterState[scope];
+    let out = list;
+
+    if (st.search.trim()) {
+      const q = st.search.trim().toLowerCase();
+      out = out.filter(s => (s.server_name || '').toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q));
+    }
+
+    const needsPlayerData = st.playerQuery.trim() || st.adminOnline || st.ownerOnline;
+    if (needsPlayerData) {
+      // Kick off background fetches for anything not cached yet; filter below uses
+      // whatever is cached right now, and re-renders once the fetch completes.
+      ensurePlayersCachedFor(out, scope);
+    }
+
+    if (st.playerQuery.trim()) {
+      const q = st.playerQuery.trim().toLowerCase();
+      out = out.filter(s => {
+        const names = serverPlayerNames(s);
+        if (!names) return false; // not loaded yet
+        return names.some(n => n.toLowerCase().includes(q));
+      });
+    }
+
+    if (st.adminOnline) {
+      out = out.filter(s => serverHasAdminOnline(s) === true);
+    }
+
+    if (st.ownerOnline) {
+      out = out.filter(s => serverHasOwnerOnline(s) === true);
+    }
+
+    if (st.sort === 'most') {
+      out = [...out].sort((a, b) => (b.connected_players || 0) - (a.connected_players || 0));
+    } else if (st.sort === 'least') {
+      out = [...out].sort((a, b) => (a.connected_players || 0) - (b.connected_players || 0));
+    }
+
+    return out;
+  }
+
+  function updateFilterStatus(scope, shown, total) {
+    const el = document.getElementById('filter-status-' + scope);
+    if (!el) return;
+    const st = filterState[scope];
+    const bits = [];
+    if (st.search.trim()) bits.push(`name contains "${st.search.trim()}"`);
+    if (st.playerQuery.trim()) bits.push(`player "${st.playerQuery.trim()}" online`);
+    if (st.adminOnline) bits.push('admin online');
+    if (st.ownerOnline) bits.push('owner online');
+    if (st.sort === 'most') bits.push('sorted: most popular');
+    if (st.sort === 'least') bits.push('sorted: least popular');
+    el.innerHTML = bits.length
+      ? `Showing <span class="hl">${shown}</span> of ${total} servers &middot; ${bits.map(esc).join(' &middot; ')}`
+      : `Showing <span class="hl">${shown}</span> of ${total} servers`;
+  }
+
+  // ═══════════════════════ SERVERS (fetch + render) ═══════════════════════
+
   let lastServersSignature = null;
+  let lastAllServersSignature = null;
 
   function serversSignature(list) {
     // Cheap signature so we skip re-renders (and losing open player panels) when nothing changed
@@ -697,7 +1081,6 @@
   }
 
   async function loadServers() {
-    let fetchFailed = false;
     try {
       const res = await fetch(PROXY_URL, {
         method: 'POST',
@@ -708,44 +1091,54 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
 
-      const raw = [];
+      const rawAll = [];
+      const rawOfficial = [];
 
       if (data.favorites) {
         Object.values(data.favorites).forEach(s => {
+          rawAll.push(s);
           const combined = (s.server_name || '') + ' ' + (s.description || '');
-          if (combined.includes(REAL_MARK)) raw.push(s);
+          if (combined.includes(REAL_MARK)) rawOfficial.push(s);
         });
       }
       if (data.nearby) {
         data.nearby.forEach(s => {
+          rawAll.push(s);
           const combined = (s.server_name || '') + ' ' + (s.description || '');
-          if (combined.includes(REAL_MARK)) raw.push(s);
+          if (combined.includes(REAL_MARK)) rawOfficial.push(s);
         });
       }
 
-      const seen = new Set();
-      const fresh = raw.filter(s => {
-        if (seen.has(s.server_id)) return false;
-        seen.add(s.server_id); return true;
-      });
+      const dedupe = (arr) => {
+        const seen = new Set();
+        return arr.filter(s => {
+          if (seen.has(s.server_id)) return false;
+          seen.add(s.server_id); return true;
+        });
+      };
+
+      const freshOfficial = dedupe(rawOfficial);
+      const freshAll = dedupe(rawAll);
 
       const featuredId = siteData?.main_server_id;
-      fresh.sort((a, b) => {
+      const byFeaturedThenPop = (a, b) => {
         if (a.server_id === featuredId) return -1;
         if (b.server_id === featuredId) return 1;
         return (b.connected_players || 0) - (a.connected_players || 0);
-      });
+      };
+      freshOfficial.sort(byFeaturedThenPop);
+      freshAll.sort(byFeaturedThenPop);
 
-      // Cache: only commit + re-render if something actually changed.
-      allServers = fresh;
+      allServers = freshOfficial;
+      allServersFull = freshAll;
 
     } catch(e) {
       console.error('Server fetch failed, keeping cached server list:', e);
-      fetchFailed = true;
-      // Intentionally do NOT clear allServers here — keep showing the last good cache.
+      // Intentionally do NOT clear allServers/allServersFull here — keep showing the last good cache.
     }
 
     document.getElementById('servers-loading').style.display = 'none';
+    document.getElementById('allservers-loading').style.display = 'none';
     serversLoaded = true;
 
     const featuredId = siteData?.main_server_id;
@@ -756,13 +1149,22 @@
     const sig = serversSignature(allServers);
     if (sig !== lastServersSignature) {
       lastServersSignature = sig;
-      renderServers();
+      renderList('servers');
+    }
+
+    const sigAll = serversSignature(allServersFull);
+    if (sigAll !== lastAllServersSignature) {
+      lastAllServersSignature = sigAll;
+      renderList('allservers');
     }
 
     // If a deep-link (?server=ID) was requested before the server list finished loading, open it now.
-    if (pendingModalServerId && allServers.some(s => s.server_id === pendingModalServerId)) {
-      openServerModal(pendingModalServerId, false);
-      pendingModalServerId = null;
+    if (pendingModalServerId) {
+      const pool = [...allServers, ...allServersFull];
+      if (pool.some(s => s.server_id === pendingModalServerId)) {
+        openServerModal(pendingModalServerId, false);
+        pendingModalServerId = null;
+      }
     }
   }
 
@@ -783,23 +1185,27 @@
     `;
   }
 
-  function renderServers() {
-    const query = (document.getElementById('server-search')?.value || '').toLowerCase();
-    const grid  = document.getElementById('servers-grid');
-    const empty = document.getElementById('servers-empty');
+  // Unified renderer for both the "servers" (official) and "allservers" (full) pages.
+  function renderList(scope) {
+    const sourceList = scope === 'servers' ? allServers : allServersFull;
+    const gridId  = scope === 'servers' ? 'servers-grid' : 'allservers-grid';
+    const emptyId = scope === 'servers' ? 'servers-empty' : 'allservers-empty';
+    const grid  = document.getElementById(gridId);
+    const empty = document.getElementById(emptyId);
     if (!grid) return;
+
+    const filtered = applyFilters(sourceList, scope);
+    updateFilterStatus(scope, filtered.length, sourceList.length);
+
     grid.innerHTML = '';
-
-    const featuredId = siteData?.main_server_id;
-    const filtered = allServers.filter(s =>
-      !query || (s.server_name || '').toLowerCase().includes(query) || (s.description || '').toLowerCase().includes(query)
-    );
-
     if (filtered.length === 0) { empty.style.display = 'block'; return; }
     empty.style.display = 'none';
 
+    const featuredId = siteData?.main_server_id;
+
     filtered.forEach(s => {
       const isFeatured = s.server_id === featuredId;
+      const isOfficial = ((s.server_name || '') + ' ' + (s.description || '')).includes(REAL_MARK);
       const isOnline   = s.online && !s.suspended;
       const sc = isOnline ? 'online' : 'offline';
       const st = isOnline ? 'ONLINE' : 'OFFLINE';
@@ -813,6 +1219,7 @@
           <div class="server-name">
             ${esc(s.server_name || 'Unnamed')}
             ${isFeatured ? '<span class="flagship-badge">MAIN SERVER</span>' : ''}
+            ${(scope === 'allservers' && !isOfficial) ? '<span class="unofficial-badge">UNOFFICIAL</span>' : ''}
           </div>
           <div class="status-dot ${sc}"></div>
         </div>
@@ -828,7 +1235,7 @@
         <div class="server-footer">
           <span class="status-text status-${sc}">${st}</span>
           <div style="display:flex;gap:0.5rem;align-items:center;">
-            <button class="players-btn" id="players-toggle-btn-card-${esc(s.server_id)}" onclick="event.stopPropagation(); openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
+            <button class="players-btn" id="players-toggle-btn-${scope}-${esc(s.server_id)}" onclick="event.stopPropagation(); openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
             ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Discord</a>` : ''}
           </div>
         </div>
@@ -839,7 +1246,7 @@
 
   // SERVER MODAL
   function openServerModal(serverId, push = true) {
-    const s = allServers.find(x => x.server_id === serverId);
+    const s = allServers.find(x => x.server_id === serverId) || allServersFull.find(x => x.server_id === serverId);
     if (!s) return;
     const isFeatured = s.server_id === siteData?.main_server_id;
     const isOnline   = s.online && !s.suspended;
@@ -874,7 +1281,6 @@
 
     if (push) {
       const params = new URLSearchParams(location.search);
-      params.set('tab', 'servers');
       params.set('server', serverId);
       history.pushState({}, '', location.pathname + '?' + params.toString());
     }
@@ -899,10 +1305,31 @@
     gray: '#808080', grey: '#808080', orange: '#ffa500', purple: '#800080',
   };
 
+  // Resolves a raw Luanti colorspec into something CSS can use directly.
+  // Handles: "#rgb"/"#rrggbb"/"#rrggbbaa", bare hex without "#", "0x"-prefixed hex,
+  // known Luanti color names, and finally falls back to passing the raw string
+  // straight to CSS (covers valid CSS color names like "cyan", "gold", "pink" that
+  // aren't in our small named-color table but the browser understands natively).
   function resolveLuantiColor(raw) {
     if (!raw) return null;
-    if (raw.startsWith('#')) return raw;
-    return LUANTI_NAMED_COLORS[raw.toLowerCase()] || raw;
+    let c = String(raw).trim();
+    if (!c) return null;
+
+    if (/^0x[0-9a-fA-F]+$/.test(c)) {
+      c = '#' + c.slice(2);
+    }
+
+    if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{4}$|^[0-9a-fA-F]{6}$|^[0-9a-fA-F]{8}$/.test(c)) {
+      c = '#' + c;
+    }
+
+    if (c.startsWith('#')) return c;
+
+    const named = LUANTI_NAMED_COLORS[c.toLowerCase()];
+    if (named) return named;
+
+    // Unknown token — let the browser try it directly rather than dropping the color.
+    return c;
   }
 
   // Splits a Luanti-formatted string into { color, text } runs at each \u001b(c@COLOR) marker.
@@ -986,8 +1413,9 @@
   // Builds one player-row HTML.
   // - No gender → defaults to male icon (gender_boy.png)
   // - admin gender → crown
-  // - Prefix emoji (e.g. ⚜️) shown in MultiCraft font before the bracket
-  // - No spaces added in JS — gap handled by CSS flexbox on .player-row
+  // - Badges (Montresique membership + custom badges.json entries) render right after
+  //   the gender/admin icon, each shown as "[glyph]" or an image, colored per-badge.
+  // - Prefix emoji (e.g. ⚜️) shown in MultiCraft font before the in-game bracket tag
   function buildPlayerRowHtml(p) {
     const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
     const genderKey = typeof p === 'string' ? '' : (p?.gender || '').toLowerCase();
@@ -996,6 +1424,12 @@
     const { prefix, bracketHtml, nameColor } = typeof p === 'string'
       ? { prefix: '', bracketHtml: null, nameColor: null }
       : parseTag(p?.tag);
+
+    const badgesInner =
+      (isMontresiqueMember(name) ? badgeToHtml({ type: 'text', value: REAL_MARK, color: 'var(--violet)', title: 'Montresique Member' }) : '') +
+      getCustomBadges(name).map(badgeToHtml).join('');
+    const badgesHtml = badgesInner ? `<span class="player-row-badges">${badgesInner}</span>` : '';
+
     const nameHtml = nameColor
       ? `<span class="player-row-name" style="color:${esc(nameColor)}">${esc(name)}</span>`
       : `<span class="player-row-name">${esc(name)}</span>`;
@@ -1004,7 +1438,7 @@
     const prefixHtml = prefix ? `<span class="player-row-prefix">${esc(prefix)}</span>` : '';
     const tagHtml = bracketHtml ? `<span class="player-row-tag">${bracketHtml}</span>` : '';
     const sep = bracketHtml ? '&nbsp;' : '';
-    return `<div class="player-row">${iconHtml}${prefixHtml}${tagHtml}${sep}${nameHtml}</div>`;
+    return `<div class="player-row">${iconHtml}${badgesHtml}${prefixHtml}${tagHtml}${sep}${nameHtml}</div>`;
   }
 
   // PLAYERS OVERLAY
@@ -1021,12 +1455,17 @@
 
     // Show cached data immediately if available
     const cached = playersCache[serverId];
-    const server = allServers.find(s => s.server_id === serverId);
-    elCur.textContent = cached ? cached.players.length : (server?.connected_players ?? 0);
+    const server = allServers.find(s => s.server_id === serverId) || allServersFull.find(s => s.server_id === serverId);
+    elCur.textContent = (cached && Array.isArray(cached.players)) ? cached.players.length : (server?.connected_players ?? 0);
     elMax.textContent = server?.max_players ?? '?';
 
-    if (cached) {
-      body.innerHTML = cached.players.map(buildPlayerRowHtml).join('') || '<div class="players-status">No players currently online.</div>';
+    if (cached && Array.isArray(cached.players)) {
+      try {
+        body.innerHTML = cached.players.map(buildPlayerRowHtml).join('') || '<div class="players-status">No players currently online.</div>';
+      } catch (e) {
+        console.error('Failed to render cached players:', e);
+        body.innerHTML = '<div class="players-status is-error">Could not display player list.</div>';
+      }
     } else {
       body.innerHTML = '<div class="players-status">Loading players&hellip;</div>';
     }
@@ -1039,23 +1478,34 @@
 
       if (!players) {
         console.warn('[players] Unrecognized response shape for', serverId, data);
-        if (!cached) body.innerHTML = '<div class="players-status is-error">Could not read player data.</div>';
+        if (currentPlayersServerId === serverId && !cached) {
+          body.innerHTML = '<div class="players-status is-error">Could not read player data.</div>';
+        }
         return;
       }
 
       // Also pull max_players from the response if available
-      if (data?.max_players != null) elMax.textContent = data.max_players;
+      if (data?.max_players != null && currentPlayersServerId === serverId) {
+        elMax.textContent = data.max_players;
+      }
 
       playersCache[serverId] = { players, ts: Date.now() };
 
       // Only update if this overlay is still showing this server
       if (currentPlayersServerId !== serverId) return;
       elCur.textContent = players.length;
-      body.innerHTML = players.map(buildPlayerRowHtml).join('') || '<div class="players-status">No players currently online.</div>';
+      try {
+        body.innerHTML = players.map(buildPlayerRowHtml).join('') || '<div class="players-status">No players currently online.</div>';
+      } catch (renderErr) {
+        console.error('Failed to render player rows:', renderErr);
+        body.innerHTML = '<div class="players-status is-error">Could not display player list.</div>';
+      }
 
     } catch (e) {
       console.error('Failed to fetch players:', e);
-      if (!cached) body.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
+      if (currentPlayersServerId === serverId && !cached) {
+        body.innerHTML = '<div class="players-status is-error">Could not load player list. Try again shortly.</div>';
+      }
     }
   }
 
@@ -1084,21 +1534,132 @@
     return null;
   }
 
+  // ═══════════════════════ NEWS ═══════════════════════
+
+  async function loadNews() {
+    const loadingEl = document.getElementById('news-loading');
+    const emptyEl   = document.getElementById('news-empty');
+    const gridEl    = document.getElementById('news-grid');
+
+    try {
+      const manifestRes = await fetch(`${NEWS_BASE_URL}/manifest.json`, { cache: 'no-store' });
+      if (!manifestRes.ok) throw new Error('HTTP ' + manifestRes.status);
+      const manifest = await manifestRes.json();
+      const postIds = Array.isArray(manifest.posts) ? manifest.posts : [];
+
+      const posts = await Promise.all(postIds.map(async id => {
+        try {
+          const postRes = await fetch(`${NEWS_BASE_URL}/${encodeURIComponent(id)}/post.json`, { cache: 'no-store' });
+          if (!postRes.ok) throw new Error('HTTP ' + postRes.status);
+          const post = await postRes.json();
+          return {
+            id,
+            name: post.name || id,
+            description: post.description || '',
+            images: Array.isArray(post.images) ? post.images : [],
+          };
+        } catch (e) {
+          console.warn('Failed to load news post', id, e);
+          return null;
+        }
+      }));
+
+      newsPosts = posts.filter(Boolean);
+      newsLoaded = true;
+    } catch (e) {
+      console.error('Failed to load news manifest:', e);
+      newsPosts = [];
+      newsLoaded = true;
+    }
+
+    loadingEl.style.display = 'none';
+    renderNews();
+
+    // Deep-link support for ?post=ID
+    const params = new URLSearchParams(location.search);
+    const postId = params.get('post');
+    if (postId && newsPosts.some(p => p.id === postId)) {
+      openNewsModal(postId, false);
+    }
+  }
+
+  function renderNews() {
+    const gridEl  = document.getElementById('news-grid');
+    const emptyEl = document.getElementById('news-empty');
+    gridEl.innerHTML = '';
+
+    if (newsPosts.length === 0) { emptyEl.style.display = 'block'; return; }
+    emptyEl.style.display = 'none';
+
+    newsPosts.forEach(p => {
+      const thumb = p.images[0]
+        ? `<img class="news-card-thumb" src="${esc(`${NEWS_BASE_URL}/${encodeURIComponent(p.id)}/${p.images[0]}`)}" alt="" loading="lazy" />`
+        : `<div class="news-card-thumb placeholder">&#8499;</div>`;
+      const card = document.createElement('div');
+      card.className = 'news-card';
+      card.onclick = () => openNewsModal(p.id);
+      card.innerHTML = `
+        ${thumb}
+        <div class="news-card-body">
+          <div class="news-card-title">${esc(p.name)}</div>
+          <div class="news-card-desc">${esc(p.description)}</div>
+        </div>
+      `;
+      gridEl.appendChild(card);
+    });
+  }
+
+  function openNewsModal(postId, push = true) {
+    const p = newsPosts.find(x => x.id === postId);
+    if (!p) return;
+
+    const imagesHtml = p.images.map(img =>
+      `<img src="${esc(`${NEWS_BASE_URL}/${encodeURIComponent(p.id)}/${img}`)}" alt="" loading="lazy" />`
+    ).join('');
+
+    document.getElementById('news-modal-box').innerHTML = `
+      <button class="modal-close" onclick="closeNewsModal()">&times;</button>
+      <div class="modal-title">${esc(p.name)}</div>
+      ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
+      <div class="news-modal-desc">${esc(p.description)}</div>
+    `;
+    document.getElementById('news-modal').classList.add('open');
+
+    if (push) {
+      const params = new URLSearchParams(location.search);
+      params.set('tab', 'news');
+      params.set('post', postId);
+      history.pushState({}, '', location.pathname + '?' + params.toString());
+    }
+  }
+  function closeNewsModal(push = true) {
+    document.getElementById('news-modal').classList.remove('open');
+    if (push) {
+      const params = new URLSearchParams(location.search);
+      params.delete('post');
+      const qs = params.toString();
+      history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    }
+  }
+  function closeNewsModalOutside(e) { if (e.target.id === 'news-modal') closeNewsModal(); }
+
   function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── Router: reads ?tab= and ?server= from the URL and reflects them in the UI ──
+  // ── Router: reads ?tab= and ?server=/?post= from the URL and reflects them in the UI ──
   function route(push = false) {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
     const serverId = params.get('server');
+    const postId = params.get('post');
 
     const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
     showPage(targetTab, false); // never push here; we're reading the URL, not writing it
 
     if (serverId) {
-      if (allServers.length) {
+      const pool = [...allServers, ...allServersFull];
+      if (pool.length) {
         openServerModal(serverId, false);
       } else {
         // Server list hasn't loaded yet — loadServers() will open it once available.
@@ -1106,6 +1667,12 @@
       }
     } else {
       closeServerModal(false);
+    }
+
+    if (postId && newsLoaded) {
+      openNewsModal(postId, false);
+    } else if (!postId) {
+      closeNewsModal(false);
     }
   }
 
