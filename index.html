@@ -363,13 +363,14 @@
     .players-modal-body::-webkit-scrollbar-track { background: transparent; }
     .players-modal-body::-webkit-scrollbar-thumb { background: var(--violet-d); border-radius: 3px; }
     .player-row {
-      display: flex; align-items: center; gap: 0.6rem;
+      display: flex; align-items: center;
       padding: 0.5rem 0.75rem; border-radius: 8px;
       background: rgba(255,255,255,0.03); margin-bottom: 0.35rem;
       border: 1px solid var(--border);
     }
     .player-row:last-child { margin-bottom: 0; }
-    .player-row-icon { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+    .player-row-icon { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; margin-right: 0.5rem; }
+    .player-row-prefix { font-family: 'MultiCraftFont', monospace; font-size: 0.82rem; flex-shrink: 0; margin-right: 0.2rem; }
     .player-row-tag { font-size: 0.82rem; flex-shrink: 0; }
     .player-row-name { font-size: 0.85rem; }
     .players-status { font-size: 0.82rem; color: var(--muted); text-align: center; padding: 1.5rem; }
@@ -513,7 +514,7 @@
     <input class="search-box" type="text" id="server-search" placeholder="Search servers&hellip;" oninput="renderServers()" />
   </div>
   <div id="servers-loading" class="loading-state"><div class="spinner"></div>Fetching servers&hellip;</div>
-  <div id="servers-empty"  class="empty-state" style="display:none;">Searching for servers..</div>
+  <div id="servers-empty"  class="empty-state" style="display:none;">No servers found. (If this shows for you, just wait for a bit. It will display eventually.)</div>
   <div class="servers-grid" id="servers-grid"></div>
   <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-servers"></span> &middot; Powered by area12.lol</footer>
 </div>
@@ -891,16 +892,17 @@
 
   // PLAYERS LIST (cached per server_id; reused across home / card / modal instances)
   // PLAYER TAG PARSING (Luanti/Minetest color-coded tags)
-  // Tags look like: "\u001b(c@COLOR)[\u001b(c@COLOR)text...]\u001b(c@COLOR) Name\u001b(c@COLOR)"
-  // We only want the "[...]" bracket portion (with its colors preserved as HTML), never the
-  // name baked into the tag — the display name always comes from the player's "name" field.
   const LUANTI_ESC = '\u001b';
-  const LUANTI_NAMED_COLORS = { black: '#000000', maroon: '#800000', white: '#ffffff', red: '#ff0000' };
+  const LUANTI_NAMED_COLORS = {
+    black: '#000000', maroon: '#800000', white: '#ffffff', red: '#ff0000',
+    indigo: '#4b0082', green: '#008000', blue: '#0000ff', yellow: '#ffff00',
+    gray: '#808080', grey: '#808080', orange: '#ffa500', purple: '#800080',
+  };
 
   function resolveLuantiColor(raw) {
     if (!raw) return null;
     if (raw.startsWith('#')) return raw;
-    return LUANTI_NAMED_COLORS[raw.toLowerCase()] || raw; // many CSS color names work as-is too
+    return LUANTI_NAMED_COLORS[raw.toLowerCase()] || raw;
   }
 
   // Splits a Luanti-formatted string into { color, text } runs at each \u001b(c@COLOR) marker.
@@ -911,7 +913,7 @@
     while (i < str.length) {
       if (str[i] === LUANTI_ESC && str[i + 1] === '(') {
         const close = str.indexOf(')', i);
-        if (close === -1) break; // malformed tail, stop parsing
+        if (close === -1) break;
         const inside = str.slice(i + 2, close);
         const match = inside.match(/^c@(.+)$/);
         if (match) currentColor = match[1];
@@ -927,11 +929,12 @@
     return runs;
   }
 
-  // Extracts both the colored bracket HTML and the name color from a Luanti tag in one pass.
-  // Bracket HTML: the "[...]" portion with color spans preserved.
-  // Name color: the color of the first non-whitespace run after "]", applied to the name field.
+  // Parses a Luanti tag string into:
+  //   prefix     — any text/emoji before the "[" (e.g. "⚜️"), trimmed
+  //   bracketHtml — the "[...]" portion as colored HTML spans (ONLY up to "]", nothing after)
+  //   nameColor   — the color of the first non-whitespace run after "]"
   function parseTag(tag) {
-    if (!tag) return { bracketHtml: null, nameColor: null };
+    if (!tag) return { prefix: '', bracketHtml: null, nameColor: null };
     const runs = tokenizeLuantiColorRuns(tag);
     let plain = '';
     const bounds = [];
@@ -939,54 +942,69 @@
       bounds.push({ idx, start: plain.length, end: plain.length + r.text.length });
       plain += r.text;
     });
+
     const openIdx = plain.indexOf('[');
     const closeIdx = plain.indexOf(']', openIdx);
-    if (openIdx === -1 || closeIdx === -1) return { bracketHtml: null, nameColor: null };
 
-    // Build bracket HTML
+    // Prefix: plain text before "[", trimmed (catches "⚜️ " etc.)
+    const prefix = openIdx > 0 ? plain.slice(0, openIdx).trim() : '';
+
+    if (openIdx === -1 || closeIdx === -1) {
+      return { prefix, bracketHtml: null, nameColor: null };
+    }
+
+    // Bracket HTML: STRICTLY from openIdx to closeIdx inclusive — nothing after "]"
     let bracketHtml = '';
     for (const b of bounds) {
       const s = Math.max(b.start, openIdx);
-      const e = Math.min(b.end, closeIdx + 1);
+      const e = Math.min(b.end, closeIdx + 1); // closeIdx+1 is one past "]", never beyond
       if (s >= e) continue;
       const text = plain.slice(s, e);
       const color = resolveLuantiColor(runs[b.idx].color);
       bracketHtml += color ? `<span style="color:${esc(color)}">${esc(text)}</span>` : esc(text);
     }
 
-    // Find the first non-whitespace run after "]" — that run's color is the name color.
+    // Name color: first non-whitespace run strictly after "]"
     let nameColor = null;
     for (const b of bounds) {
-      if (b.end <= closeIdx + 1) continue; // still inside/at bracket
-      const text = plain.slice(b.start, b.end);
-      if (text.trim() === '') continue;    // skip the space between ] and name
+      if (b.end <= closeIdx + 1) continue; // run is entirely inside/at bracket end
+      const text = plain.slice(Math.max(b.start, closeIdx + 1), b.end);
+      if (text.trim() === '') continue;
       nameColor = resolveLuantiColor(runs[b.idx].color);
       break;
     }
 
-    return { bracketHtml, nameColor };
+    return { prefix, bracketHtml, nameColor };
   }
 
   const GENDER_ICONS = {
-    admin: 'assets/crown.png',
+    admin:  'assets/crown.png',
     male:   'assets/gender_boy.png',
-    female:  'assets/gender_girl.png',
+    female: 'assets/gender_girl.png',
   };
 
-  // Builds one player-row HTML using the new overlay row style.
+  // Builds one player-row HTML.
+  // - No gender → defaults to male icon (gender_boy.png)
+  // - admin gender → crown
+  // - Prefix emoji (e.g. ⚜️) shown in MultiCraft font before the bracket
+  // - No spaces added in JS — gap handled by CSS flexbox on .player-row
   function buildPlayerRowHtml(p) {
     const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
     const genderKey = typeof p === 'string' ? '' : (p?.gender || '').toLowerCase();
-    const iconSrc = genderKey ? (GENDER_ICONS[genderKey] || null) : null;
-    const { bracketHtml, nameColor } = typeof p === 'string' ? { bracketHtml: null, nameColor: null } : parseTag(p?.tag);
+    // Default to male when no gender specified
+    const iconSrc = GENDER_ICONS[genderKey] ?? 'assets/gender_boy.png';
+    const { prefix, bracketHtml, nameColor } = typeof p === 'string'
+      ? { prefix: '', bracketHtml: null, nameColor: null }
+      : parseTag(p?.tag);
     const nameHtml = nameColor
       ? `<span class="player-row-name" style="color:${esc(nameColor)}">${esc(name)}</span>`
       : `<span class="player-row-name">${esc(name)}</span>`;
-    const iconHtml = iconSrc
-      ? `<img class="player-row-icon" src="${esc(iconSrc)}" alt="" />`
-      : '';
+    const iconHtml = `<img class="player-row-icon" src="${esc(iconSrc)}" alt="" />`;
+    // Prefix (⚜️ etc.) rendered in MultiCraft font as a separate span so it inherits the site font
+    const prefixHtml = prefix ? `<span class="player-row-prefix">${esc(prefix)}</span>` : '';
     const tagHtml = bracketHtml ? `<span class="player-row-tag">${bracketHtml}</span>` : '';
-    return `<div class="player-row">${iconHtml}${tagHtml}${nameHtml}</div>`;
+    const sep = bracketHtml ? '&nbsp;' : '';
+    return `<div class="player-row">${iconHtml}${prefixHtml}${tagHtml}${sep}${nameHtml}</div>`;
   }
 
   // PLAYERS OVERLAY
