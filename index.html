@@ -62,6 +62,7 @@
       background: rgba(10,10,15,0.9);
       backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
+      gap: 0.6rem;
     }
     .nav-logo { font-size: 1.2rem; color: var(--violet); cursor: pointer; letter-spacing: 0.05em; }
     .nav-logo span { color: var(--text); }
@@ -89,6 +90,16 @@
       white-space: nowrap;
     }
     .nav-discord-btn:hover { background: #4752c4; transform: translateY(-1px); }
+
+    #nav-login-btn {
+      font-family: 'MultiCraftFont', monospace;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.9rem;
+      border-radius: 5px;
+      color: #fff;
+    }
 
     .discord-cta-card {
       display: flex;
@@ -530,10 +541,11 @@
     }
 
     .chat-window {
-      position: absolute; bottom: 66px; right: 0; width: 320px; max-height: 460px;
-      background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
-      display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-    }
+          position: absolute; bottom: 66px; right: 0; width: 320px; max-height: 460px;
+          background: var(--card2); border: 1px solid var(--border); border-radius: 12px;
+          display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+        .chat-window[hidden] { display: none; }
     .chat-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); background: var(--card);
@@ -547,9 +559,8 @@
     }
     .chat-refresh-btn:hover, .chat-close-btn:hover { color: var(--text); }
     .chat-refresh-btn.spinning { animation: spin 0.8s linear infinite; }
-
     .chat-messages {
-      flex: 1; overflow-y: auto; padding: 0.7rem; min-height: 200px; max-height: 320px;
+      flex: 1 1 auto; overflow-y: auto; padding: 0.7rem; max-height: 320px; height: auto;
       scrollbar-width: thin; scrollbar-color: var(--violet-d) transparent;
     }
     .chat-messages::-webkit-scrollbar { width: 6px; }
@@ -594,10 +605,24 @@
     }
     .btn-discord-auth:hover { background: #4752c4; }
 
-    @media (max-width: 640px) {
-      .chat-window { width: calc(100vw - 2rem); right: -0.5rem; }
-    }
-  </style>
+      @media (max-width: 640px) {
+            .chat-window { width: calc(100vw - 2rem); right: -0.5rem; }
+          }
+
+          .chat-widget.widget-hidden .chat-bubble,
+          .chat-widget.widget-hidden .chat-window { display: none; }
+
+          .chat-widget-tab {
+            display: none;
+            position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 900;
+            background: var(--violet-d); color: #fff; border: 1px solid rgba(200,160,255,0.3);
+            border-radius: 50%; width: 44px; height: 44px; cursor: pointer;
+            align-items: center; justify-content: center; font-size: 1.1rem;
+            box-shadow: 0 0 16px rgba(144,96,224,0.3); transition: background 0.2s, transform 0.2s;
+          }
+          .chat-widget-tab:hover { background: var(--violet); transform: translateY(-2px); }
+          #chat-widget-tab.tab-visible { display: flex; }
+        </style>
 </head>
 <body>
 
@@ -610,7 +635,7 @@
 
   <div id="chat-window" class="chat-window" hidden>
     <div class="chat-header">
-      <span class="chat-header-title">Montresique <span class="chat-header-title-accent">Chat</span></span>
+      <span class="chat-header-title">ℳontresique <span class="chat-header-title-accent">Chat</span></span>
       <div class="chat-header-actions">
         <button id="chat-refresh-btn" class="chat-refresh-btn" aria-label="Refresh" title="Refresh">&#8635;</button>
         <button id="chat-close-btn" class="chat-close-btn" aria-label="Close">&times;</button>
@@ -636,6 +661,8 @@
   </div>
 </div>
 
+<button id="chat-widget-tab" class="chat-widget-tab" aria-label="Open chat" title="Chat">&#128172;</button>
+
 <nav>
   <div class="nav-logo" onclick="showPage('home')">&#8499;<span>ontresique</span></div>
   <ul class="nav-links">
@@ -646,7 +673,10 @@
     <li><button onclick="showPage('team')"     id="nav-team">Team</button></li>
     <li><button onclick="showPage('programs')" id="nav-programs">Programs</button></li>
   </ul>
-  <a class="nav-discord-btn" id="nav-discord-btn" href="#" target="_blank" rel="noopener">Join Discord</a>
+  <div class="nav-actions">
+    <a class="nav-discord-btn" id="nav-discord-btn" href="#" target="_blank" rel="noopener">Join Discord</a>
+    <button id="nav-login-btn" class="nav-discord-btn" style="background:var(--violet-d);border:none;cursor:pointer;">Login</button>
+  </div>
 </nav>
 
 <!-- HOME -->
@@ -1349,14 +1379,18 @@
       <div class="modal-admin">Admin: <span>${esc(s.admin_name || '&mdash;')}</span></div>
       <div class="modal-desc">${esc(s.description || 'No description.')}</div>
       <div class="modal-footer">
-        <span class="status-text status-${sc}">${st}</span>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
-          <button class="players-btn" onclick="openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
-          ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
-        </div>
-      </div>
-    `;
-    document.getElementById('server-modal').classList.add('open');
+              <span class="status-text status-${sc}">${st}</span>
+              <div style="display:flex;gap:0.5rem;align-items:center;">
+                <button class="players-btn" onclick="openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
+                ${s.url ? `<a class="discord-link" href="${esc(s.url)}" target="_blank" rel="noopener">Discord</a>` : ''}
+              </div>
+            </div>
+            <hr class="divider" style="margin:1.2rem 0;" />
+            <div style="font-size:0.75rem;color:var(--violet);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.6rem;">Reviews</div>
+            <div id="reviews-section-${esc(s.server_id)}"></div>
+          `;
+          document.getElementById('server-modal').classList.add('open');
+          renderReviewsSection(s.server_id, 'reviews-section-' + s.server_id);
 
     if (push) {
       const params = new URLSearchParams(location.search);
@@ -1761,46 +1795,75 @@
   init();
   route(false);
 
-  // ═══════════════════════ CHAT (Discord login via Supabase Auth + Supabase DB) ═══════════════════════
+  // ═══════════════════════ CHAT + AUTH (Discord login via Supabase Auth) ═══════════════════════
 
-    const SUPABASE_URL = 'https://vyueydffrvbqwczcuing.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_KoJgDwxyiYtmdltnqieQ-w_pv7jwl1W';
-    const SUPABASE_HEADERS = {
-      'apikey': SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json',
+  const SUPABASE_URL = 'https://vyueydffrvbqwczcuing.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_KoJgDwxyiYtmdltnqieQ-w_pv7jwl1W';
+  const SUPABASE_HEADERS = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  };
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let discordUser = null;
+  let authReady = false; // becomes true once we've resolved the very first session check
+  let chatMessages = [];
+  let chatOpen = false;
+  let chatPollingInterval = null;
+  let chatMessagesEl = null, chatInput = null, chatSendBtn = null;
+
+  function getDiscordAvatarUrl(user) { return user?.avatar || ''; }
+  function getDiscordDisplayName(user) { return user?.global_name || user?.username || 'User'; }
+
+  async function startDiscordLogin() {
+    await supabaseClient.auth.signInWithOAuth({
+      provider: 'discord',
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
+  }
+
+  async function signOut() {
+    await supabaseClient.auth.signOut();
+  }
+
+  function discordUserFromSession(session) {
+    if (!session || !session.user) return null;
+    const meta = session.user.user_metadata || {};
+    return {
+      id: meta.provider_id || meta.sub || session.user.id,
+      username: meta.full_name || meta.name || meta.user_name || 'User',
+      global_name: meta.full_name || meta.name || null,
+      avatar: meta.avatar_url || '',
     };
+  }
 
-    // Supabase JS client — used ONLY for auth (login/session).
-    // Chat messages still go through plain fetch() against the REST API below, unchanged.
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    let discordUser = null;
-    let chatMessages = [];
-    let chatOpen = false;
-    let chatPollingInterval = null;
-    let chatMessagesEl = null, chatInput = null, chatSendBtn = null;
-
-    function getDiscordAvatarUrl(user) {
-      if (!user) return '';
-      return user.avatar || '';
+  // ── Nav login/logout button ──
+  function renderNavAuthButton() {
+    const btn = document.getElementById('nav-login-btn');
+    if (!btn) return;
+    if (!authReady) {
+      btn.textContent = '…';
+      btn.onclick = null;
+      return;
     }
-    function getDiscordDisplayName(user) {
-      if (!user) return '';
-      return user.global_name || user.username || 'User';
+    if (discordUser) {
+      btn.textContent = 'Sign Out (' + getDiscordDisplayName(discordUser) + ')';
+      btn.onclick = async () => {
+        btn.disabled = true;
+        await signOut();
+        btn.disabled = false;
+      };
+    } else {
+      btn.textContent = 'Login';
+      btn.onclick = () => startDiscordLogin();
     }
+  }
 
-    // ── Login: hand off to Supabase Auth, which redirects to Discord and back ──
-    async function startDiscordLogin() {
-      await supabaseClient.auth.signInWithOAuth({
-        provider: 'discord',
-        options: { redirectTo: window.location.origin + window.location.pathname }
-      });
-    }
-
-    function updateChatAuthState() {
-      const inputArea = document.getElementById('chat-input-area');
-      const loginArea = document.getElementById('chat-login-area');
-      if (!inputArea || !loginArea) return;
+  function updateChatAuthState() {
+    const inputArea = document.getElementById('chat-input-area');
+    const loginArea = document.getElementById('chat-login-area');
+    if (inputArea && loginArea) {
       if (discordUser) {
         inputArea.removeAttribute('hidden');
         loginArea.setAttribute('hidden', '');
@@ -1809,118 +1872,127 @@
         loginArea.removeAttribute('hidden');
       }
     }
+    renderNavAuthButton();
+    renderReviewFormState();
+  }
 
-    // Pulls a usable Discord identity out of the Supabase session's user_metadata
-    function discordUserFromSession(session) {
-      if (!session || !session.user) return null;
-      const meta = session.user.user_metadata || {};
-      return {
-        id: meta.provider_id || meta.sub || session.user.id,
-        username: meta.full_name || meta.name || meta.user_name || 'User',
-        global_name: meta.full_name || meta.name || null,
-        avatar: meta.avatar_url || '',
-      };
-    }
+  function applySession(session) {
+    discordUser = discordUserFromSession(session);
+    authReady = true;
+    updateChatAuthState();
+    if (chatOpen) loadChatMessages();
+  }
 
-    async function initDiscordAuth() {
-      // Restore existing session (also picks up the session Supabase just created
-      // after redirecting back from Discord, since supabase-js parses the URL
-      // fragment automatically on load).
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      discordUser = discordUserFromSession(session);
-      updateChatAuthState();
-      if (chatOpen) loadChatMessages();
+  async function initDiscordAuth() {
+    // onAuthStateChange fires once immediately with the current session (event
+    // 'INITIAL_SESSION') AND handles the OAuth redirect hash parsing itself,
+    // so we rely on it as the single source of truth instead of racing a
+    // separate getSession() call — this was the cause of the "stuck loading"
+    // bug, since getSession() could resolve before the redirect hash was parsed.
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      applySession(session);
+    });
 
-      // Keep in sync with future login/logout events
-      supabaseClient.auth.onAuthStateChange((_event, session) => {
-        discordUser = discordUserFromSession(session);
+    document.getElementById('chat-widget-login-btn')?.addEventListener('click', startDiscordLogin);
+
+    // Safety net: if for some reason no event fires within 4s (e.g. offline),
+    // stop showing "…" and fall back to logged-out state so the UI isn't stuck.
+    setTimeout(() => {
+      if (!authReady) {
+        authReady = true;
         updateChatAuthState();
-        if (chatOpen) loadChatMessages();
+      }
+    }, 4000);
+  }
+
+  // ── Chat messages ──
+  async function loadChatMessages() {
+    chatMessagesEl = document.getElementById('chat-messages');
+    if (!chatMessagesEl) return;
+    const hasContent = !!chatMessagesEl.querySelector('.chat-msg');
+    if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-loading">Loading&hellip;</p>';
+
+    try {
+      const url = SUPABASE_URL + '/rest/v1/chat_messages?select=*&order=created_at.desc&limit=50';
+      const res = await fetch(url, { headers: SUPABASE_HEADERS, cache: 'no-store' });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        console.error('Chat fetch failed:', res.status, body);
+        throw new Error('HTTP ' + res.status);
+      }
+      const msgs = (await res.json()).reverse();
+      chatMessages = msgs;
+
+      if (msgs.length === 0) {
+        chatMessagesEl.innerHTML = '<p class="chat-empty">No messages yet. Say hi!</p>';
+      } else {
+        const wasAtBottom = chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 60;
+        chatMessagesEl.innerHTML = msgs.map(buildMessageHtml).join('');
+        if (wasAtBottom || !hasContent) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+      }
+    } catch (err) {
+      console.error('Chat load error:', err);
+      if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-error">Could not load messages.</p>';
+    }
+  }
+
+  function buildMessageHtml(msg) {
+    const isSelf = discordUser && msg.discord_user_id === discordUser.id;
+    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const avatarHtml = msg.avatar_url
+      ? `<img class="chat-msg-avatar" src="${escChat(msg.avatar_url)}" alt="" loading="lazy" />`
+      : `<div class="chat-msg-avatar" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);">${escChat((msg.username || '?').charAt(0).toUpperCase())}</div>`;
+    return `<div class="chat-msg${isSelf ? ' self' : ''}">
+      ${avatarHtml}
+      <div class="chat-msg-content">
+        <span class="chat-msg-user">${escChat(msg.username)}</span>
+        <div class="chat-msg-bubble">${escChat(msg.message)}</div>
+        <span class="chat-msg-time">${time}</span>
+      </div>
+    </div>`;
+  }
+
+  async function sendChatMessage() {
+    if (!discordUser || !chatInput) return;
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    chatSendBtn.disabled = true;
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/chat_messages', {
+        method: 'POST',
+        headers: Object.assign({}, SUPABASE_HEADERS, { 'Prefer': 'return=representation' }),
+        body: JSON.stringify({
+          discord_user_id: discordUser.id,
+          username: getDiscordDisplayName(discordUser),
+          avatar_url: getDiscordAvatarUrl(discordUser),
+          message: text,
+        }),
       });
-
-      document.getElementById('chat-widget-login-btn')?.addEventListener('click', startDiscordLogin);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      await loadChatMessages();
+    } catch (err) {
+      console.error('Chat send error:', err);
+    } finally {
+      chatSendBtn.disabled = false;
+      chatInput.focus();
     }
+  }
 
-    // ── Chat messages (Supabase DB — unchanged) ──
-    async function loadChatMessages() {
-      chatMessagesEl = document.getElementById('chat-messages');
-      if (!chatMessagesEl) return;
-      const hasContent = !!chatMessagesEl.querySelector('.chat-msg');
-      if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-loading">Loading&hellip;</p>';
-
-      try {
-        const url = SUPABASE_URL + '/rest/v1/chat_messages?select=*&order=created_at.desc&limit=50';
-        const res = await fetch(url, { headers: SUPABASE_HEADERS });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const msgs = (await res.json()).reverse();
-        chatMessages = msgs;
-
-        if (msgs.length === 0) {
-          chatMessagesEl.innerHTML = '<p class="chat-empty">No messages yet. Say hi!</p>';
-        } else {
-          const wasAtBottom = chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 60;
-          chatMessagesEl.innerHTML = msgs.map(buildMessageHtml).join('');
-          if (wasAtBottom || !hasContent) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-        }
-      } catch (err) {
-        console.error('Chat load error:', err);
-        if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-error">Could not load messages.</p>';
-      }
-    }
-
-    function buildMessageHtml(msg) {
-      const isSelf = discordUser && msg.discord_user_id === discordUser.id;
-      const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const avatarHtml = msg.avatar_url
-        ? `<img class="chat-msg-avatar" src="${escChat(msg.avatar_url)}" alt="" loading="lazy" />`
-        : `<div class="chat-msg-avatar" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);">${escChat((msg.username || '?').charAt(0).toUpperCase())}</div>`;
-      return `<div class="chat-msg${isSelf ? ' self' : ''}">
-        ${avatarHtml}
-        <div class="chat-msg-content">
-          <span class="chat-msg-user">${escChat(msg.username)}</span>
-          <div class="chat-msg-bubble">${escChat(msg.message)}</div>
-          <span class="chat-msg-time">${time}</span>
-        </div>
-      </div>`;
-    }
-
-    async function sendChatMessage() {
-      if (!discordUser || !chatInput) return;
-      const text = chatInput.value.trim();
-      if (!text) return;
-
-      chatInput.value = '';
-      chatInput.style.height = 'auto';
-      chatSendBtn.disabled = true;
-
-      try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/chat_messages', {
-          method: 'POST',
-          headers: Object.assign({}, SUPABASE_HEADERS, { 'Prefer': 'return=representation' }),
-          body: JSON.stringify({
-            discord_user_id: discordUser.id,
-            username: getDiscordDisplayName(discordUser),
-            avatar_url: getDiscordAvatarUrl(discordUser),
-            message: text,
-          }),
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        await loadChatMessages();
-      } catch (err) {
-        console.error('Chat send error:', err);
-      } finally {
-        chatSendBtn.disabled = false;
-        chatInput.focus();
-      }
-    }
-
-    function openChat() {
+  // ── Widget open/close (starts hidden; a small tab brings it back) ──
+  function openChat() {
       chatOpen = true;
+      document.getElementById('chat-widget')?.classList.remove('widget-hidden');
+      document.getElementById('chat-widget')?.classList.add('open');
       document.getElementById('chat-window')?.removeAttribute('hidden');
       document.getElementById('chat-badge')?.setAttribute('hidden', '');
       updateChatAuthState();
       loadChatMessages();
-      if (!chatPollingInterval) chatPollingInterval = setInterval(loadChatMessages, 4000);
+      if (chatPollingInterval) { clearInterval(chatPollingInterval); }
+      chatPollingInterval = setInterval(loadChatMessages, 4000);
       chatInput?.focus();
     }
     function closeChat() {
@@ -1928,47 +2000,249 @@
       document.getElementById('chat-window')?.setAttribute('hidden', '');
       if (chatPollingInterval) { clearInterval(chatPollingInterval); chatPollingInterval = null; }
     }
+  function hideChatWidget() {
+      document.getElementById('chat-widget')?.classList.add('widget-hidden');
+      document.getElementById('chat-widget-tab')?.classList.add('tab-visible');
+      closeChat();
+    }
+    function showChatWidget() {
+      document.getElementById('chat-widget')?.classList.remove('widget-hidden');
+      document.getElementById('chat-widget-tab')?.classList.remove('tab-visible');
+    }
+  function escChat(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
-    function escChat(str) {
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function initChat() {
+    const bubble = document.getElementById('chat-bubble');
+    const closeBtn = document.getElementById('chat-close-btn');
+    const refreshBtn = document.getElementById('chat-refresh-btn');
+    const tab = document.getElementById('chat-widget-tab');
+    chatMessagesEl = document.getElementById('chat-messages');
+    chatInput = document.getElementById('chat-input');
+    chatSendBtn = document.getElementById('chat-send-btn');
+    if (!bubble) return;
+
+    // Widget starts hidden; clicking the little tab brings it back and opens chat directly.
+        hideChatWidget();
+        tab?.addEventListener('click', () => {
+          showChatWidget();
+          openChat();
+        });
+
+    bubble.addEventListener('click', () => chatOpen ? closeChat() : openChat());
+        closeBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeChat();
+        });
+    refreshBtn?.addEventListener('click', () => {
+      refreshBtn.classList.add('spinning');
+      loadChatMessages().finally(() => refreshBtn.classList.remove('spinning'));
+    });
+    chatSendBtn?.addEventListener('click', sendChatMessage);
+    chatInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+    });
+    chatInput?.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && chatPollingInterval) {
+        clearInterval(chatPollingInterval); chatPollingInterval = null;
+      } else if (!document.hidden && chatOpen && !chatPollingInterval) {
+        chatPollingInterval = setInterval(loadChatMessages, 4000);
+      }
+    });
+
+    initDiscordAuth();
+  }
+
+  function handleNavLoginClick() {
+    // placeholder; real handler assigned per-state in renderNavAuthButton()
+  }
+
+  initChat();
+
+  // ═══════════════════════ SERVER REVIEWS ═══════════════════════
+
+  let reviewsCache = {}; // server_id -> { reviews: [...], ts }
+
+  async function loadReviews(serverId) {
+    try {
+      const url = SUPABASE_URL + '/rest/v1/server_reviews?select=*&server_id=eq.' + encodeURIComponent(serverId) + '&order=created_at.desc';
+      const res = await fetch(url, { headers: SUPABASE_HEADERS });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const reviews = await res.json();
+      reviewsCache[serverId] = { reviews, ts: Date.now() };
+      return reviews;
+    } catch (e) {
+      console.error('Failed to load reviews for', serverId, e);
+      return null;
+    }
+  }
+
+  function avgRating(reviews) {
+    if (!reviews || reviews.length === 0) return null;
+    return (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length);
+  }
+
+  function starsHtml(rating, size) {
+    const full = Math.round(rating);
+    let out = '';
+    for (let i = 1; i <= 5; i++) {
+      out += `<span style="color:${i <= full ? 'var(--amber)' : 'var(--border)'};font-size:${size || '0.9rem'};">&#9733;</span>`;
+    }
+    return out;
+  }
+
+  function reviewCardHtml(r) {
+    const time = new Date(r.created_at).toLocaleDateString();
+    const avatarHtml = r.avatar_url
+      ? `<img src="${esc(r.avatar_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" />`
+      : `<div style="width:24px;height:24px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--muted);">${esc((r.username||'?').charAt(0).toUpperCase())}</div>`;
+    return `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+          ${avatarHtml}
+          <span style="font-size:0.82rem;color:#fff;">${esc(r.username)}</span>
+          <span style="margin-left:auto;">${starsHtml(r.rating, '0.75rem')}</span>
+        </div>
+        ${r.comment ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${esc(r.comment)}</div>` : ''}
+        <div style="font-size:0.65rem;color:var(--muted);margin-top:0.3rem;">${esc(time)}</div>
+      </div>`;
+  }
+
+  // Renders the reviews block for a given server into a container element.
+  async function renderReviewsSection(serverId, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);padding:0.5rem 0;">Loading reviews&hellip;</div>';
+
+    const reviews = await loadReviews(serverId);
+    if (reviews === null) {
+      el.innerHTML = '<div style="font-size:0.8rem;color:var(--red);padding:0.5rem 0;">Could not load reviews.</div>';
+      return;
     }
 
-    function initChat() {
-      const bubble = document.getElementById('chat-bubble');
-      const closeBtn = document.getElementById('chat-close-btn');
-      const refreshBtn = document.getElementById('chat-refresh-btn');
-      chatMessagesEl = document.getElementById('chat-messages');
-      chatInput = document.getElementById('chat-input');
-      chatSendBtn = document.getElementById('chat-send-btn');
-      if (!bubble) return;
+    const avg = avgRating(reviews);
+    const myReview = discordUser ? reviews.find(r => r.discord_user_id === discordUser.id) : null;
 
-      bubble.addEventListener('click', () => chatOpen ? closeChat() : openChat());
-      closeBtn?.addEventListener('click', closeChat);
-      refreshBtn?.addEventListener('click', () => {
-        refreshBtn.classList.add('spinning');
-        loadChatMessages().finally(() => refreshBtn.classList.remove('spinning'));
-      });
-      chatSendBtn?.addEventListener('click', sendChatMessage);
-      chatInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
-      });
-      chatInput?.addEventListener('input', () => {
-        chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
-      });
+    let html = `<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem;">`;
+    if (avg !== null) {
+      html += `${starsHtml(avg)} <span style="font-size:0.8rem;color:var(--muted);">${avg.toFixed(1)} &middot; ${reviews.length} review${reviews.length===1?'':'s'}</span>`;
+    } else {
+      html += `<span style="font-size:0.8rem;color:var(--muted);">No reviews yet.</span>`;
+    }
+    html += `</div>`;
 
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden && chatPollingInterval) {
-          clearInterval(chatPollingInterval); chatPollingInterval = null;
-        } else if (!document.hidden && chatOpen && !chatPollingInterval) {
-          chatPollingInterval = setInterval(loadChatMessages, 4000);
-        }
-      });
+    // Review submission form (gated on login)
+    html += `<div id="review-form-${esc(serverId)}" style="margin-bottom:1rem;"></div>`;
 
-      initDiscordAuth();
+    // Existing reviews list
+    html += reviews.length
+      ? reviews.map(reviewCardHtml).join('')
+      : '';
+
+    el.innerHTML = html;
+    renderReviewForm(serverId, myReview);
+  }
+
+  function renderReviewForm(serverId, myReview) {
+    const el = document.getElementById('review-form-' + serverId);
+    if (!el) return;
+
+    if (!discordUser) {
+      el.innerHTML = `<div style="font-size:0.8rem;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;">Log in with Discord (top right) to leave a review.</div>`;
+      return;
     }
 
-    initChat();
+    const currentRating = myReview?.rating || 0;
+    const currentComment = myReview?.comment || '';
+
+    el.innerHTML = `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:0.7rem 0.9rem;">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">${myReview ? 'Update your review' : 'Leave a review'}</div>
+        <div id="star-input-${esc(serverId)}" style="margin-bottom:0.5rem;"></div>
+        <textarea id="review-comment-${esc(serverId)}" placeholder="Optional comment&hellip;" maxlength="300"
+          style="width:100%;min-height:50px;resize:vertical;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.8rem;padding:0.4rem 0.5rem;outline:none;">${esc(currentComment)}</textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:0.5rem;">
+          <button class="players-btn" id="submit-review-${esc(serverId)}">${myReview ? 'Update' : 'Submit'}</button>
+        </div>
+      </div>`;
+
+    renderStarInput(serverId, currentRating);
+
+    document.getElementById('submit-review-' + serverId)?.addEventListener('click', () => submitReview(serverId));
+  }
+
+  function renderStarInput(serverId, selected) {
+    const el = document.getElementById('star-input-' + serverId);
+    if (!el) return;
+    let selectedRating = selected;
+    function draw() {
+      el.innerHTML = [1,2,3,4,5].map(i =>
+        `<span data-star="${i}" style="cursor:pointer;font-size:1.3rem;color:${i <= selectedRating ? 'var(--amber)' : 'var(--border)'};">&#9733;</span>`
+      ).join('');
+      el.querySelectorAll('[data-star]').forEach(star => {
+        star.addEventListener('click', () => {
+          selectedRating = parseInt(star.getAttribute('data-star'), 10);
+          el.dataset.selected = selectedRating;
+          draw();
+        });
+      });
+    }
+    el.dataset.selected = selectedRating;
+    draw();
+  }
+
+  async function submitReview(serverId) {
+    if (!discordUser) return;
+    const starEl = document.getElementById('star-input-' + serverId);
+    const rating = parseInt(starEl?.dataset.selected || '0', 10);
+    const comment = document.getElementById('review-comment-' + serverId)?.value.trim() || '';
+
+    if (!rating || rating < 1 || rating > 5) {
+      alert('Please select a star rating.');
+      return;
+    }
+
+    const btn = document.getElementById('submit-review-' + serverId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/server_reviews?on_conflict=server_id,discord_user_id', {
+        method: 'POST',
+        headers: Object.assign({}, SUPABASE_HEADERS, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          server_id: serverId,
+          discord_user_id: discordUser.id,
+          username: getDiscordDisplayName(discordUser),
+          avatar_url: getDiscordAvatarUrl(discordUser),
+          rating,
+          comment,
+        }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      await renderReviewsSection(serverId, 'reviews-section-' + serverId);
+    } catch (err) {
+      console.error('Review submit error:', err);
+      alert('Could not save review. Try again shortly.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
+    }
+  }
+
+  // Called by updateChatAuthState() so any currently-open review form re-renders
+  // (e.g. login state changes while a server modal is open).
+  function renderReviewFormState() {
+    document.querySelectorAll('[id^="review-form-"]').forEach(el => {
+      const serverId = el.id.replace('review-form-', '');
+      const cached = reviewsCache[serverId];
+      const myReview = (discordUser && cached) ? cached.reviews.find(r => r.discord_user_id === discordUser.id) : null;
+      renderReviewForm(serverId, myReview);
+    });
+  }
 </script>
 </body>
 </html>
