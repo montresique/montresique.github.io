@@ -813,6 +813,7 @@
   <div class="modal-box" id="news-modal-box"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const REAL_MARK        = '\u2133'; // &#8499; &mdash; used to detect official Montresique servers
   const PROXY_URL_B64        = 'aHR0cHM6Ly9tdWx0aWNyYWZ0LXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAvcHJveHkvZmluZC1uZWFyYnktc2VydmVycw==';
@@ -1760,264 +1761,214 @@
   init();
   route(false);
 
-  // ═══════════════════════ CHAT (Discord login + Supabase) ═══════════════════════
+  // ═══════════════════════ CHAT (Discord login via Supabase Auth + Supabase DB) ═══════════════════════
 
-  const SUPABASE_URL = 'https://vyueydffrvbqwczcuing.supabase.co';       // <-- fill in
-  const SUPABASE_ANON_KEY = 'sb_publishable_KoJgDwxyiYtmdltnqieQ-w_pv7jwl1W';                      // <-- fill in
-  const SUPABASE_HEADERS = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-  };
+    const SUPABASE_URL = 'https://vyueydffrvbqwczcuing.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_KoJgDwxyiYtmdltnqieQ-w_pv7jwl1W';
+    const SUPABASE_HEADERS = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    };
 
-  const DISCORD_CLIENT_ID = '1517337399947034654';             // <-- fill in
-  const DISCORD_REDIRECT_URI = window.location.origin + window.location.pathname; // must exactly match Discord app settings
-  const DISCORD_SCOPES = 'identify';
-  const DISCORD_TOKEN_PROXY = 'https://YOUR-WORKER-NAME.workers.dev'; // <-- fill in (your Cloudflare Worker URL)
+    // Supabase JS client — used ONLY for auth (login/session).
+    // Chat messages still go through plain fetch() against the REST API below, unchanged.
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let discordUser = null;
-  let chatMessages = [];
-  let chatOpen = false;
-  let chatPollingInterval = null;
-  let chatMessagesEl = null, chatInput = null, chatSendBtn = null;
+    let discordUser = null;
+    let chatMessages = [];
+    let chatOpen = false;
+    let chatPollingInterval = null;
+    let chatMessagesEl = null, chatInput = null, chatSendBtn = null;
 
-  function getDiscordAvatarUrl(user) {
-    if (!user) return '';
-    if (user.avatar) return 'https://cdn.discordapp.com/avatars/' + user.id + '/' + user.avatar + '.png?size=64';
-    const idx = Number(BigInt(user.id) >> 22n) % 6;
-    return 'https://cdn.discordapp.com/embed/avatars/' + idx + '.png';
-  }
-  function getDiscordDisplayName(user) {
-    if (!user) return '';
-    return user.global_name || user.username || 'User';
-  }
-
-  // ── OAuth (authorization code flow via Cloudflare Worker) ──
-  async function startDiscordLogin() {
-    const state = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(12)))).replace(/[^a-zA-Z0-9]/g, '');
-    sessionStorage.setItem('discord_oauth_state', state);
-    const params = new URLSearchParams({
-      client_id: DISCORD_CLIENT_ID,
-      redirect_uri: DISCORD_REDIRECT_URI,
-      response_type: 'code',
-      scope: DISCORD_SCOPES,
-      state: state,
-    });
-    window.location.href = 'https://discord.com/api/oauth2/authorize?' + params.toString();
-  }
-
-  async function exchangeCodeForToken(code) {
-    const res = await fetch(DISCORD_TOKEN_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, redirect_uri: DISCORD_REDIRECT_URI, client_id: DISCORD_CLIENT_ID }),
-    });
-    if (!res.ok) throw new Error('token exchange failed (' + res.status + ')');
-    return res.json();
-  }
-
-  async function fetchDiscordUser(accessToken) {
-    const res = await fetch('https://discord.com/api/v10/users/@me', {
-      headers: { 'Authorization': 'Bearer ' + accessToken },
-    });
-    if (!res.ok) throw new Error('discord profile fetch failed (' + res.status + ')');
-    return res.json();
-  }
-
-  function saveDiscordSession(user, accessToken, expiresAt) {
-    try { sessionStorage.setItem('discord_session', JSON.stringify({ user, accessToken, expiresAt })); } catch {}
-  }
-  function loadDiscordSession() {
-    try {
-      const raw = sessionStorage.getItem('discord_session');
-      if (!raw) return null;
-      const s = JSON.parse(raw);
-      if (s.expiresAt && Date.now() > s.expiresAt) { sessionStorage.removeItem('discord_session'); return null; }
-      return s;
-    } catch { return null; }
-  }
-  function clearDiscordSession() { sessionStorage.removeItem('discord_session'); }
-
-  function updateChatAuthState() {
-    const inputArea = document.getElementById('chat-input-area');
-    const loginArea = document.getElementById('chat-login-area');
-    if (!inputArea || !loginArea) return;
-    if (discordUser) {
-      inputArea.removeAttribute('hidden');
-      loginArea.setAttribute('hidden', '');
-    } else {
-      inputArea.setAttribute('hidden', '');
-      loginArea.removeAttribute('hidden');
+    function getDiscordAvatarUrl(user) {
+      if (!user) return '';
+      return user.avatar || '';
     }
-  }
+    function getDiscordDisplayName(user) {
+      if (!user) return '';
+      return user.global_name || user.username || 'User';
+    }
 
-  async function handleDiscordCallback() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    if (urlParams.get('error') || !code) return;
+    // ── Login: hand off to Supabase Auth, which redirects to Discord and back ──
+    async function startDiscordLogin() {
+      await supabaseClient.auth.signInWithOAuth({
+        provider: 'discord',
+        options: { redirectTo: window.location.origin + window.location.pathname }
+      });
+    }
 
-    const savedState = sessionStorage.getItem('discord_oauth_state');
-    sessionStorage.removeItem('discord_oauth_state');
-    if (!savedState || state !== savedState) { console.error('Discord OAuth: invalid state'); return; }
+    function updateChatAuthState() {
+      const inputArea = document.getElementById('chat-input-area');
+      const loginArea = document.getElementById('chat-login-area');
+      if (!inputArea || !loginArea) return;
+      if (discordUser) {
+        inputArea.removeAttribute('hidden');
+        loginArea.setAttribute('hidden', '');
+      } else {
+        inputArea.setAttribute('hidden', '');
+        loginArea.removeAttribute('hidden');
+      }
+    }
 
-    try {
-      const tokenData = await exchangeCodeForToken(code);
-      const user = await fetchDiscordUser(tokenData.access_token);
-      const expiresAt = Date.now() + (tokenData.expires_in || 604800) * 1000;
-      discordUser = user;
-      saveDiscordSession(user, tokenData.access_token, expiresAt);
+    // Pulls a usable Discord identity out of the Supabase session's user_metadata
+    function discordUserFromSession(session) {
+      if (!session || !session.user) return null;
+      const meta = session.user.user_metadata || {};
+      return {
+        id: meta.provider_id || meta.sub || session.user.id,
+        username: meta.full_name || meta.name || meta.user_name || 'User',
+        global_name: meta.full_name || meta.name || null,
+        avatar: meta.avatar_url || '',
+      };
+    }
+
+    async function initDiscordAuth() {
+      // Restore existing session (also picks up the session Supabase just created
+      // after redirecting back from Discord, since supabase-js parses the URL
+      // fragment automatically on load).
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      discordUser = discordUserFromSession(session);
       updateChatAuthState();
       if (chatOpen) loadChatMessages();
-    } catch (err) {
-      console.error('Discord auth error:', err);
-    }
 
-    // Strip ?code/&state from the URL without losing tab/server/post params
-    const params = new URLSearchParams(window.location.search);
-    params.delete('code'); params.delete('state');
-    const qs = params.toString();
-    history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
-  }
-
-  function initDiscordAuth() {
-    const session = loadDiscordSession();
-    if (session) discordUser = session.user;
-    updateChatAuthState();
-
-    document.getElementById('chat-widget-login-btn')?.addEventListener('click', startDiscordLogin);
-
-    handleDiscordCallback();
-  }
-
-  // ── Chat messages (Supabase) ──
-  async function loadChatMessages() {
-    chatMessagesEl = document.getElementById('chat-messages');
-    if (!chatMessagesEl) return;
-    const hasContent = !!chatMessagesEl.querySelector('.chat-msg');
-    if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-loading">Loading&hellip;</p>';
-
-    try {
-      const url = SUPABASE_URL + '/rest/v1/chat_messages?select=*&order=created_at.desc&limit=50';
-      const res = await fetch(url, { headers: SUPABASE_HEADERS });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const msgs = (await res.json()).reverse();
-      chatMessages = msgs;
-
-      if (msgs.length === 0) {
-        chatMessagesEl.innerHTML = '<p class="chat-empty">No messages yet. Say hi!</p>';
-      } else {
-        const wasAtBottom = chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 60;
-        chatMessagesEl.innerHTML = msgs.map(buildMessageHtml).join('');
-        if (wasAtBottom || !hasContent) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-      }
-    } catch (err) {
-      console.error('Chat load error:', err);
-      if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-error">Could not load messages.</p>';
-    }
-  }
-
-  function buildMessageHtml(msg) {
-    const isSelf = discordUser && msg.discord_user_id === discordUser.id;
-    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const avatarHtml = msg.avatar_url
-      ? `<img class="chat-msg-avatar" src="${escChat(msg.avatar_url)}" alt="" loading="lazy" />`
-      : `<div class="chat-msg-avatar" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);">${escChat((msg.username || '?').charAt(0).toUpperCase())}</div>`;
-    return `<div class="chat-msg${isSelf ? ' self' : ''}">
-      ${avatarHtml}
-      <div class="chat-msg-content">
-        <span class="chat-msg-user">${escChat(msg.username)}</span>
-        <div class="chat-msg-bubble">${escChat(msg.message)}</div>
-        <span class="chat-msg-time">${time}</span>
-      </div>
-    </div>`;
-  }
-
-  async function sendChatMessage() {
-    if (!discordUser || !chatInput) return;
-    const text = chatInput.value.trim();
-    if (!text) return;
-
-    chatInput.value = '';
-    chatInput.style.height = 'auto';
-    chatSendBtn.disabled = true;
-
-    try {
-      const res = await fetch(SUPABASE_URL + '/rest/v1/chat_messages', {
-        method: 'POST',
-        headers: Object.assign({}, SUPABASE_HEADERS, { 'Prefer': 'return=representation' }),
-        body: JSON.stringify({
-          discord_user_id: discordUser.id,
-          username: getDiscordDisplayName(discordUser),
-          avatar_url: getDiscordAvatarUrl(discordUser),
-          message: text,
-        }),
+      // Keep in sync with future login/logout events
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        discordUser = discordUserFromSession(session);
+        updateChatAuthState();
+        if (chatOpen) loadChatMessages();
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      await loadChatMessages();
-    } catch (err) {
-      console.error('Chat send error:', err);
-    } finally {
-      chatSendBtn.disabled = false;
-      chatInput.focus();
+
+      document.getElementById('chat-widget-login-btn')?.addEventListener('click', startDiscordLogin);
     }
-  }
 
-  function openChat() {
-    chatOpen = true;
-    document.getElementById('chat-window')?.removeAttribute('hidden');
-    document.getElementById('chat-badge')?.setAttribute('hidden', '');
-    updateChatAuthState();
-    loadChatMessages();
-    if (!chatPollingInterval) chatPollingInterval = setInterval(loadChatMessages, 4000);
-    chatInput?.focus();
-  }
-  function closeChat() {
-    chatOpen = false;
-    document.getElementById('chat-window')?.setAttribute('hidden', '');
-    if (chatPollingInterval) { clearInterval(chatPollingInterval); chatPollingInterval = null; }
-  }
+    // ── Chat messages (Supabase DB — unchanged) ──
+    async function loadChatMessages() {
+      chatMessagesEl = document.getElementById('chat-messages');
+      if (!chatMessagesEl) return;
+      const hasContent = !!chatMessagesEl.querySelector('.chat-msg');
+      if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-loading">Loading&hellip;</p>';
 
-  function escChat(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+      try {
+        const url = SUPABASE_URL + '/rest/v1/chat_messages?select=*&order=created_at.desc&limit=50';
+        const res = await fetch(url, { headers: SUPABASE_HEADERS });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const msgs = (await res.json()).reverse();
+        chatMessages = msgs;
 
-  function initChat() {
-    const bubble = document.getElementById('chat-bubble');
-    const closeBtn = document.getElementById('chat-close-btn');
-    const refreshBtn = document.getElementById('chat-refresh-btn');
-    chatMessagesEl = document.getElementById('chat-messages');
-    chatInput = document.getElementById('chat-input');
-    chatSendBtn = document.getElementById('chat-send-btn');
-    if (!bubble) return;
-
-    bubble.addEventListener('click', () => chatOpen ? closeChat() : openChat());
-    closeBtn?.addEventListener('click', closeChat);
-    refreshBtn?.addEventListener('click', () => {
-      refreshBtn.classList.add('spinning');
-      loadChatMessages().finally(() => refreshBtn.classList.remove('spinning'));
-    });
-    chatSendBtn?.addEventListener('click', sendChatMessage);
-    chatInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
-    });
-    chatInput?.addEventListener('input', () => {
-      chatInput.style.height = 'auto';
-      chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
-    });
-
-    // Pause polling when the tab isn't visible
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && chatPollingInterval) {
-        clearInterval(chatPollingInterval); chatPollingInterval = null;
-      } else if (!document.hidden && chatOpen && !chatPollingInterval) {
-        chatPollingInterval = setInterval(loadChatMessages, 4000);
+        if (msgs.length === 0) {
+          chatMessagesEl.innerHTML = '<p class="chat-empty">No messages yet. Say hi!</p>';
+        } else {
+          const wasAtBottom = chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 60;
+          chatMessagesEl.innerHTML = msgs.map(buildMessageHtml).join('');
+          if (wasAtBottom || !hasContent) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
+      } catch (err) {
+        console.error('Chat load error:', err);
+        if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-error">Could not load messages.</p>';
       }
-    });
+    }
 
-    initDiscordAuth();
-  }
+    function buildMessageHtml(msg) {
+      const isSelf = discordUser && msg.discord_user_id === discordUser.id;
+      const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const avatarHtml = msg.avatar_url
+        ? `<img class="chat-msg-avatar" src="${escChat(msg.avatar_url)}" alt="" loading="lazy" />`
+        : `<div class="chat-msg-avatar" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);">${escChat((msg.username || '?').charAt(0).toUpperCase())}</div>`;
+      return `<div class="chat-msg${isSelf ? ' self' : ''}">
+        ${avatarHtml}
+        <div class="chat-msg-content">
+          <span class="chat-msg-user">${escChat(msg.username)}</span>
+          <div class="chat-msg-bubble">${escChat(msg.message)}</div>
+          <span class="chat-msg-time">${time}</span>
+        </div>
+      </div>`;
+    }
 
-  initChat();
+    async function sendChatMessage() {
+      if (!discordUser || !chatInput) return;
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      chatSendBtn.disabled = true;
+
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/chat_messages', {
+          method: 'POST',
+          headers: Object.assign({}, SUPABASE_HEADERS, { 'Prefer': 'return=representation' }),
+          body: JSON.stringify({
+            discord_user_id: discordUser.id,
+            username: getDiscordDisplayName(discordUser),
+            avatar_url: getDiscordAvatarUrl(discordUser),
+            message: text,
+          }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        await loadChatMessages();
+      } catch (err) {
+        console.error('Chat send error:', err);
+      } finally {
+        chatSendBtn.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    function openChat() {
+      chatOpen = true;
+      document.getElementById('chat-window')?.removeAttribute('hidden');
+      document.getElementById('chat-badge')?.setAttribute('hidden', '');
+      updateChatAuthState();
+      loadChatMessages();
+      if (!chatPollingInterval) chatPollingInterval = setInterval(loadChatMessages, 4000);
+      chatInput?.focus();
+    }
+    function closeChat() {
+      chatOpen = false;
+      document.getElementById('chat-window')?.setAttribute('hidden', '');
+      if (chatPollingInterval) { clearInterval(chatPollingInterval); chatPollingInterval = null; }
+    }
+
+    function escChat(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function initChat() {
+      const bubble = document.getElementById('chat-bubble');
+      const closeBtn = document.getElementById('chat-close-btn');
+      const refreshBtn = document.getElementById('chat-refresh-btn');
+      chatMessagesEl = document.getElementById('chat-messages');
+      chatInput = document.getElementById('chat-input');
+      chatSendBtn = document.getElementById('chat-send-btn');
+      if (!bubble) return;
+
+      bubble.addEventListener('click', () => chatOpen ? closeChat() : openChat());
+      closeBtn?.addEventListener('click', closeChat);
+      refreshBtn?.addEventListener('click', () => {
+        refreshBtn.classList.add('spinning');
+        loadChatMessages().finally(() => refreshBtn.classList.remove('spinning'));
+      });
+      chatSendBtn?.addEventListener('click', sendChatMessage);
+      chatInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+      });
+      chatInput?.addEventListener('input', () => {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden && chatPollingInterval) {
+          clearInterval(chatPollingInterval); chatPollingInterval = null;
+        } else if (!document.hidden && chatOpen && !chatPollingInterval) {
+          chatPollingInterval = setInterval(loadChatMessages, 4000);
+        }
+      });
+
+      initDiscordAuth();
+    }
+
+    initChat();
 </script>
 </body>
 </html>
