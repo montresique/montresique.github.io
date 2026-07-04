@@ -721,7 +721,7 @@
 <div class="page" id="page-servers">
   <div class="servers-header">
     <div class="section-label">// Server List</div>
-    <h2 class="section-title">Montresique's Servers</h2>
+    <h2 class="section-title">Montresique's Servers <span class="unofficial-badge" id="servers-total-badge" style="font-size:0.7rem;vertical-align:middle;">&hellip;</span></h2>
     <div class="filter-bar" id="filter-bar-servers"></div>
     <div class="filter-status" id="filter-status-servers"></div>
   </div>
@@ -735,7 +735,7 @@
 <div class="page" id="page-allservers">
   <div class="servers-header">
     <div class="section-label">// Full Server List</div>
-    <h2 class="section-title">All Servers</h2>
+    <h2 class="section-title">All Servers <span class="unofficial-badge" id="allservers-total-badge" style="font-size:0.7rem;vertical-align:middle;">&hellip;</span></h2>
     <p style="color:var(--muted);font-size:0.83rem;margin-bottom:0.4rem;">
       Every server we can currently see &mdash; not just official Montresique servers.
     </p>
@@ -792,7 +792,7 @@
     <h2 class="section-title">Admin</h2>
     <div class="section-sub">Analytics</div>
     <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
-      <select class="filter-select" id="analytics-range-select">
+      <select class="filter-select" id="analytics-range-select" onchange="loadAdminAnalytics()">
         <option value="day">Past Day</option>
         <option value="week">Past Week</option>
         <option value="month">Past Month</option>
@@ -800,6 +800,7 @@
     </div>
     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
       <div class="leader-card"><div style="font-size:1.8rem;color:var(--violet);" id="stat-players-today">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Players Online</div></div>
+      <div class="leader-card"><div style="font-size:1.8rem;color:#fff;" id="stat-total-servers">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Total Servers</div></div>
       <div class="leader-card"><div style="font-size:1.4rem;color:var(--cyan);" id="stat-most-played">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);" id="stat-most-played-label">Most Played Server</div></div>
       <div class="leader-card"><div style="font-size:1.4rem;color:var(--green);" id="stat-avg-players">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Avg Players (range)</div></div>
       <div class="leader-card"><div style="font-size:1.4rem;color:var(--amber);" id="stat-peak-players">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Peak Players (range)</div></div>
@@ -824,11 +825,6 @@
           <select class="filter-select" id="tm-role-picker" style="flex:1;"></select>
           <button class="btn" type="button" id="tm-role-add-btn">Add Role</button>
         </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.3rem;" id="tm-badge-chips"></div>
-        <div style="display:flex;gap:0.5rem;">
-          <select class="filter-select" id="tm-badge-picker" style="flex:1;"></select>
-          <button class="btn" type="button" id="tm-badge-add-btn">Add Badge</button>
-        </div>
         <button class="btn btn-primary" id="tm-create-btn" style="align-self:flex-start;">Save Team Member</button>
       </div>
     </div>
@@ -848,25 +844,13 @@
       <button class="btn btn-primary" id="role-create-btn">Add Role</button>
     </div>
 
-    <div class="section-sub">Badges</div>
-    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
-      Badges are separate from roles — they don't grant admin access, they're just extra tags shown on a member's card (e.g. an emoji icon). Define them here, then assign them from the team member form above. Click a badge below to edit it.
-    </p>
-    <div id="badge-defs-list" style="margin-bottom:0.8rem;"></div>
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;max-width:520px;margin-bottom:2rem;">
-      <input class="search-box" type="text" id="badge-name-input" placeholder="Badge name" style="max-width:150px;" />
-      <input class="search-box" type="text" id="badge-icon-input" placeholder="Icon (emoji, optional)" style="max-width:150px;" />
-      <input class="search-box" type="color" id="badge-color-input" value="#c8a0ff" style="max-width:60px;padding:0.2rem;" />
-      <button class="btn btn-primary" id="badge-create-btn">Add Badge</button>
-    </div>
-
     <div class="section-sub">Reviews Moderation</div>
+    <input class="search-box" type="text" id="reviews-search" placeholder="Search reviews&hellip;" style="max-width:300px;margin-bottom:0.8rem;" oninput="filterAdminReviews()" />
     <div id="admin-reviews-list"></div>
-    <input class="search-box" type="text" id="reviews-search" placeholder="Search reviews&hellip;" style="max-width:300px;margin-bottom:0.6rem;" oninput="filterAdminReviews()" />
 
     <div class="section-sub">Chat Moderation</div>
+    <input class="search-box" type="text" id="chat-search" placeholder="Search messages&hellip;" style="max-width:300px;margin-bottom:0.8rem;" oninput="filterAdminChat()" />
     <div id="admin-chat-list"></div>
-    <input class="search-box" type="text" id="chat-search" placeholder="Search messages&hellip;" style="max-width:300px;margin-bottom:0.6rem;" oninput="filterAdminChat()" />
     
     <div class="section-sub">Server Overrides</div>
     <select class="filter-select" id="override-server-select" style="max-width:320px;margin-bottom:0.8rem;"></select>
@@ -877,9 +861,14 @@
       <div style="display:flex;flex-direction:column;gap:0.6rem;">
         <input class="search-box" type="text" id="news-name" placeholder="Title" style="max-width:none;" />
         <textarea id="news-desc" placeholder="Description" rows="3" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
+        <div id="news-current-images" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+        <div style="font-size:0.75rem;color:var(--muted);">Add image(s):</div>
         <input type="file" id="news-image-file" accept="image/*" multiple style="font-size:0.8rem;color:var(--muted);" />
         <div id="news-upload-status" style="font-size:0.75rem;color:var(--muted);"></div>
-        <button class="btn btn-primary" id="news-create-btn" style="align-self:flex-start;">Publish Post</button>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-primary" id="news-create-btn" style="align-self:flex-start;">Publish Post</button>
+          <button class="btn btn-outline" id="news-cancel-btn" type="button" style="align-self:flex-start;display:none;">Cancel Edit</button>
+        </div>
       </div>
     </div>
     <div id="admin-news-list"></div>
@@ -953,7 +942,6 @@
   let isAdmin = false;
   let editingMemberId = null;
   let overridesMap = {};
-  let badgeDefsMap = {};
 
   // Montresique member lookup — built once siteData loads, used to badge players in the list.
   // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
@@ -992,10 +980,9 @@
     document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
 
   try {
-          const [teamRows, roleRows, badgeRows, dataJson] = await Promise.all([
+          const [teamRows, roleRows, dataJson] = await Promise.all([
             fetch(SUPABASE_URL + '/rest/v1/team_members?select=*&order=section.asc,sort_order.asc', { headers: SUPABASE_HEADERS }).then(r => r.json()),
             fetch(SUPABASE_URL + '/rest/v1/role_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.json()),
-            fetch(SUPABASE_URL + '/rest/v1/badge_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.ok ? r.json() : []).catch(() => []),
             fetch('data/data.json').then(r => r.ok ? r.json() : { programs: [] }).catch(() => ({ programs: [] })),
           ]);
           siteData = {
@@ -1005,12 +992,10 @@
             programs: dataJson.programs || [],
           };
           rolesMap = Object.fromEntries(roleRows.map(r => [r.role_name, r.color]));
-          badgeDefsMap = Object.fromEntries(badgeRows.map(b => [b.badge_name, { color: b.color, icon: b.icon }]));
         } catch(e) {
-          console.error('Failed to load team/role/badge/program data', e);
+          console.error('Failed to load team/role/program data', e);
           siteData = { leadership: [], team: [], programs: [] };
           rolesMap = {};
-          badgeDefsMap = {};
         }
 
     if (siteData.discord_invite) {
@@ -1090,7 +1075,7 @@
   function memberCard(m) {
     return `
       <div class="member-card">
-        <div class="member-roles">${roleTagsHtml(m.roles)}${(m.badges||[]).map(b => { const d = badgeDefsMap[b]; const c = d?.color || '#888aaa'; return `<span class="role-tag" style="color:${esc(c)};border-color:${esc(c)}55;background:${esc(c)}14;">${d?.icon?esc(d.icon)+' ':''}${esc(b)}</span>`; }).join('')}</div>
+        <div class="member-roles">${roleTagsHtml(m.roles)}</div>
         <div class="member-name">${esc(m.name)}</div>
         ${m.discord_tag ? `<div class="member-discord" onclick="openDiscordModal('${esc(m.discord_id||'')}','${esc(m.discord_tag)}','${esc(m.name)}')">Discord - ${esc(m.discord_tag)}</div>` : ''}
       </div>`;
@@ -1187,6 +1172,9 @@
     document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
     if (isAdmin) loadAdminPanel();
     else if (document.getElementById('page-admin').classList.contains('active')) showPage('home');
+    if (chatOpen) loadChatMessages();
+    if (currentModalServerId) renderReviewsSection(currentModalServerId, 'reviews-section-' + currentModalServerId);
+    else renderReviewFormState();
   }
 
   function serverHasOwnerOnline(server) {
@@ -1400,6 +1388,15 @@
     if (statPlayersEl) {
       statPlayersEl.textContent = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
     }
+    const statTotalServersEl = document.getElementById('stat-total-servers');
+    if (statTotalServersEl) {
+      const onlineCount = allServersFull.filter(s => s.online && !s.suspended).length;
+      statTotalServersEl.textContent = `${allServersFull.length} (${onlineCount} online)`;
+    }
+    const serversTotalBadge = document.getElementById('servers-total-badge');
+    if (serversTotalBadge) serversTotalBadge.textContent = `${allServers.length} total`;
+    const allserversTotalBadge = document.getElementById('allservers-total-badge');
+    if (allserversTotalBadge) allserversTotalBadge.textContent = `${allServersFull.length} total`;
     if (isAdmin && document.getElementById('page-admin')?.classList.contains('active')) {
       const overrideSel = document.getElementById('override-server-select');
       if (overrideSel && overrideSel.options.length <= 1 && (allServersFull.length || allServers.length)) {
@@ -1476,9 +1473,11 @@
   }
 
   // SERVER MODAL
+  let currentModalServerId = null;
   function openServerModal(serverId, push = true) {
     const s = allServers.find(x => x.server_id === serverId) || allServersFull.find(x => x.server_id === serverId);
     if (!s) return;
+    currentModalServerId = serverId;
     const isOnline   = s.online && !s.suspended;
     const sc = isOnline ? 'online' : 'offline';
     const st = isOnline ? 'ONLINE' : 'OFFLINE';
@@ -1520,6 +1519,7 @@
   }
   function closeServerModal(push = true) {
     document.getElementById('server-modal').classList.remove('open');
+    currentModalServerId = null;
     if (push) {
       const params = new URLSearchParams(location.search);
       params.delete('server');
@@ -1653,8 +1653,6 @@
   // Builds one player-row HTML.
   // - No gender → defaults to male icon (gender_boy.png)
   // - admin gender → crown
-  // - Badges (Montresique membership + custom badges.json entries) render right after
-  //   the gender/admin icon, each shown as "[glyph]" or an image, colored per-badge.
   // - Prefix emoji (e.g. ⚜️) shown in MultiCraft font before the in-game bracket tag
   function buildPlayerRowHtml(p) {
     const name = typeof p === 'string' ? p : (p?.name || p?.username || p?.player_name || 'Unknown');
@@ -2038,6 +2036,9 @@
     const avatarHtml = msg.avatar_url
       ? `<img class="chat-msg-avatar" src="${escChat(msg.avatar_url)}" alt="" loading="lazy" />`
       : `<div class="chat-msg-avatar" style="background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);">${escChat((msg.username || '?').charAt(0).toUpperCase())}</div>`;
+    const modBtn = isAdmin
+      ? `<button onclick="deleteChatAdmin('${msg.id}')" title="Delete message (admin)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:0 0.2rem;line-height:1;">&times;</button>`
+      : '';
     return `<div class="chat-msg${isSelf ? ' self' : ''}">
       ${avatarHtml}
       <div class="chat-msg-content">
@@ -2045,6 +2046,7 @@
         <div class="chat-msg-bubble">${escChat(msg.message)}</div>
         <span class="chat-msg-time">${time}</span>
       </div>
+      ${modBtn}
     </div>`;
   }
 
@@ -2190,38 +2192,6 @@ function removeTmRole(role) {
   renderTmRoleChips();
 }
 
-let tmSelectedBadges = [];
-
-function badgeColor(name) { return badgeDefsMap[name]?.color || '#888aaa'; }
-function badgeIcon(name) { return badgeDefsMap[name]?.icon || ''; }
-
-function populateBadgePicker() {
-  const sel = document.getElementById('tm-badge-picker');
-  if (!sel) return;
-  const available = Object.keys(badgeDefsMap).filter(b => !tmSelectedBadges.includes(b));
-  sel.innerHTML = available.length ? available.map(b => `<option value="${esc(b)}">${esc(badgeIcon(b) ? badgeIcon(b) + ' ' : '')}${esc(b)}</option>`).join('') : '<option value="">No badges defined yet</option>';
-}
-function renderTmBadgeChips() {
-  const el = document.getElementById('tm-badge-chips');
-  if (!el) return;
-  el.innerHTML = tmSelectedBadges.map(b => `
-    <span class="role-tag" style="border-color:${esc(badgeColor(b))};color:${esc(badgeColor(b))};">
-      ${badgeIcon(b) ? esc(badgeIcon(b)) + ' ' : ''}${esc(b)} <span style="cursor:pointer;margin-left:0.3rem;" onclick="removeTmBadge('${esc(b)}')">&times;</span>
-    </span>`).join('') || '<span style="color:var(--muted);font-size:0.75rem;">No badges added yet.</span>';
-  populateBadgePicker();
-}
-function addTmBadge() {
-  const sel = document.getElementById('tm-badge-picker');
-  const badge = sel.value;
-  if (!badge || tmSelectedBadges.includes(badge)) return;
-  tmSelectedBadges.push(badge);
-  renderTmBadgeChips();
-}
-function removeTmBadge(badge) {
-  tmSelectedBadges = tmSelectedBadges.filter(b => b !== badge);
-  renderTmBadgeChips();
-}
-
 async function sbAuthedHeaders() {
   const { data } = await supabaseClient.auth.getSession();
   const token = data?.session?.access_token;
@@ -2239,7 +2209,6 @@ let liveServersForAdmin = [];
 
 async function loadAdminPanel() {
   renderTmRoleChips();
-  loadAdminBadgeDefsList();
   const tasks = [
     ['role defs',    loadAdminRoleDefsList],
     ['analytics',    loadAdminAnalytics],
@@ -2261,17 +2230,40 @@ async function loadAdminPanel() {
   }
 }
 
+function analyticsRangeSince() {
+  const range = document.getElementById('analytics-range-select')?.value || 'day';
+  const since = new Date();
+  if (range === 'week') {
+    since.setDate(since.getDate() - 7);
+  } else if (range === 'month') {
+    since.setDate(since.getDate() - 30);
+  } else {
+    since.setHours(0, 0, 0, 0);
+  }
+  return since;
+}
+
 async function loadAdminAnalytics() {
   // Live combined player count, straight from the currently loaded server list — no snapshot needed.
   const liveTotal = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
   document.getElementById('stat-players-today').textContent = liveTotal;
 
-  // "Most played" still uses today's snapshots, since that's an average-over-time stat,
-  // not a point-in-time one.
+  const statTotalServersEl = document.getElementById('stat-total-servers');
+  if (statTotalServersEl) {
+    const onlineCount = allServersFull.filter(s => s.online && !s.suspended).length;
+    statTotalServersEl.textContent = `${allServersFull.length} (${onlineCount} online)`;
+  }
+
+  // "Most played", avg, and peak all use snapshots over the selected range (day/week/month).
   try {
-    const since = new Date(); since.setHours(0,0,0,0);
+    const since = analyticsRangeSince();
     const rows = await adminRest('player_count_snapshots?select=*&captured_at=gte.' + since.toISOString() + '&order=captured_at.desc');
-    if (!rows.length) { document.getElementById('stat-most-played').textContent = 'No data yet'; return; }
+    if (!rows.length) {
+      document.getElementById('stat-most-played').textContent = 'No data yet';
+      document.getElementById('stat-avg-players').textContent = 'No data yet';
+      document.getElementById('stat-peak-players').textContent = 'No data yet';
+      return;
+    }
     const latest = {};
     rows.forEach(r => { if (!(r.server_id in latest)) latest[r.server_id] = r; });
     const sums = {}, counts = {};
@@ -2279,7 +2271,24 @@ async function loadAdminAnalytics() {
     let topId = null, topAvg = -1;
     Object.keys(sums).forEach(id => { const avg = sums[id]/counts[id]; if (avg > topAvg) { topAvg = avg; topId = id; } });
     document.getElementById('stat-most-played').textContent = topId ? `${latest[topId].server_name} (avg ${topAvg.toFixed(1)})` : 'No data yet';
-  } catch (e) { console.error(e); }
+
+    // Avg players (range): average of the combined total player count across all captured snapshots.
+    const byTimestamp = {};
+    rows.forEach(r => {
+      const key = r.captured_at;
+      byTimestamp[key] = (byTimestamp[key] || 0) + (r.player_count || 0);
+    });
+    const totals = Object.values(byTimestamp);
+    const avgTotal = totals.length ? (totals.reduce((a,b) => a+b, 0) / totals.length) : 0;
+    const peakTotal = totals.length ? Math.max(...totals) : 0;
+    document.getElementById('stat-avg-players').textContent = avgTotal.toFixed(1);
+    document.getElementById('stat-peak-players').textContent = peakTotal;
+  } catch (e) {
+    console.error(e);
+    document.getElementById('stat-most-played').textContent = 'Error';
+    document.getElementById('stat-avg-players').textContent = 'Error';
+    document.getElementById('stat-peak-players').textContent = 'Error';
+  }
 }
 async function saveTeamMember() {
   const name = document.getElementById('tm-name').value.trim();
@@ -2287,20 +2296,17 @@ async function saveTeamMember() {
   const discord_tag = document.getElementById('tm-discord-tag').value.trim() || null;
   const section = document.getElementById('tm-section').value;
   const roles = [...tmSelectedRoles];
-  const badges = [...tmSelectedBadges];
   if (!name) return alert('Name is required.');
   try {
     if (editingMemberId) {
-      await adminRest('team_members?id=eq.' + editingMemberId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles, badges }) });
+      await adminRest('team_members?id=eq.' + editingMemberId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
     } else {
-      await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles, badges }) });
+      await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
     }
     editingMemberId = null;
     ['tm-name','tm-discord-id','tm-discord-tag'].forEach(id => document.getElementById(id).value = '');
     tmSelectedRoles = [];
-    tmSelectedBadges = [];
     renderTmRoleChips();
-    renderTmBadgeChips();
     document.getElementById('tm-create-btn').textContent = 'Save Team Member';
     loadAdminTeamList();
     buildMemberLookup();
@@ -2317,8 +2323,8 @@ async function loadAdminTeamList() {
   try {
     const rows = await adminRest('team_members?select=*&order=section.asc,sort_order.asc');
     el.innerHTML = rows.map(m => `
-      <div class="member-card" style="cursor:pointer;" onclick='editTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)}, ${JSON.stringify(m.discord_id||"")}, ${JSON.stringify(m.discord_tag||"")}, ${JSON.stringify(m.section)}, ${JSON.stringify(m.roles||[])}, ${JSON.stringify(m.badges||[])})'>
-        <div class="member-roles">${roleTagsHtml(m.roles)}${(m.badges||[]).map(b => `<span class="role-tag" style="color:${esc(badgeColor(b))};border-color:${esc(badgeColor(b))}55;background:${esc(badgeColor(b))}14;">${badgeIcon(b)?esc(badgeIcon(b))+' ':''}${esc(b)}</span>`).join('')}</div>
+      <div class="member-card" style="cursor:pointer;" onclick='editTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)}, ${JSON.stringify(m.discord_id||"")}, ${JSON.stringify(m.discord_tag||"")}, ${JSON.stringify(m.section)}, ${JSON.stringify(m.roles||[])})'>
+        <div class="member-roles">${roleTagsHtml(m.roles)}</div>
         <div class="member-name">${esc(m.name)}</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">${m.discord_id ? 'Discord linked' : 'No Discord linked'} &middot; ${esc(m.section)} &middot; click to edit</div>
         <button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="event.stopPropagation();deleteTeamMember('${m.id}')">Remove</button>
@@ -2326,16 +2332,14 @@ async function loadAdminTeamList() {
   } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load team.</div>'; }
 }
 
-function editTeamMember(id, name, discordId, discordTag, section, roles, badges) {
+function editTeamMember(id, name, discordId, discordTag, section, roles) {
   editingMemberId = id;
   document.getElementById('tm-name').value = name || '';
   document.getElementById('tm-discord-id').value = discordId || '';
   document.getElementById('tm-discord-tag').value = discordTag || '';
   document.getElementById('tm-section').value = section || 'team';
   tmSelectedRoles = [...(roles || [])];
-  tmSelectedBadges = [...(badges || [])];
   renderTmRoleChips();
-  renderTmBadgeChips();
   document.getElementById('tm-create-btn').textContent = 'Update Team Member';
   document.getElementById('tm-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -2499,29 +2503,82 @@ async function uploadNewsImages(files) {
   status.textContent = '';
   return urls;
 }
+let editingNewsId = null;
+let editingNewsImages = []; // image URLs currently attached to the post being edited (or drafted)
+let allAdminNews = [];
+
+function renderNewsImagePreview() {
+  const el = document.getElementById('news-current-images');
+  if (!el) return;
+  el.innerHTML = editingNewsImages.map((url, i) => `
+    <div style="position:relative;">
+      <img src="${esc(url)}" alt="" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block;" />
+      <button type="button" onclick="removeNewsImage(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:0.7rem;line-height:1;cursor:pointer;">&times;</button>
+    </div>`).join('');
+}
+function removeNewsImage(i) {
+  editingNewsImages.splice(i, 1);
+  renderNewsImagePreview();
+}
+
 async function createNewsPost() {
   const name = document.getElementById('news-name').value.trim();
   const description = document.getElementById('news-desc').value.trim();
   const fileInput = document.getElementById('news-image-file');
   if (!name) return alert('Title is required.');
+  const btn = document.getElementById('news-create-btn');
   try {
-    const images = fileInput.files.length ? await uploadNewsImages(fileInput.files) : [];
-    await adminRest('news_posts', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images, published: true }) });
-    document.getElementById('news-name').value = '';
-    document.getElementById('news-desc').value = '';
-    fileInput.value = '';
+    btn.disabled = true;
+    const newlyUploaded = fileInput.files.length ? await uploadNewsImages(fileInput.files) : [];
+    const images = [...editingNewsImages, ...newlyUploaded];
+    if (editingNewsId) {
+      await adminRest('news_posts?id=eq.' + editingNewsId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images }) });
+    } else {
+      await adminRest('news_posts', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images, published: true }) });
+    }
+    cancelNewsEdit();
     loadAdminNews();
     loadNews();
-  } catch (e) { console.error(e); alert('Could not publish post: ' + e.message); }
+  } catch (e) { console.error(e); alert('Could not save post: ' + e.message); }
+  finally { btn.disabled = false; }
 }
+
+function editNewsPost(id) {
+  const p = allAdminNews.find(x => x.id === id);
+  if (!p) return;
+  editingNewsId = id;
+  editingNewsImages = [...(p.images || [])];
+  document.getElementById('news-name').value = p.name || '';
+  document.getElementById('news-desc').value = p.description || '';
+  document.getElementById('news-image-file').value = '';
+  renderNewsImagePreview();
+  document.getElementById('news-create-btn').textContent = 'Update Post';
+  document.getElementById('news-cancel-btn').style.display = '';
+  document.getElementById('news-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelNewsEdit() {
+  editingNewsId = null;
+  editingNewsImages = [];
+  document.getElementById('news-name').value = '';
+  document.getElementById('news-desc').value = '';
+  document.getElementById('news-image-file').value = '';
+  renderNewsImagePreview();
+  document.getElementById('news-create-btn').textContent = 'Publish Post';
+  document.getElementById('news-cancel-btn').style.display = 'none';
+}
+document.getElementById('news-cancel-btn')?.addEventListener('click', cancelNewsEdit);
+
 async function loadAdminNews() {
   const el = document.getElementById('admin-news-list');
   try {
     const rows = await adminRest('news_posts?select=*&order=created_at.desc');
+    allAdminNews = rows;
     el.innerHTML = rows.map(p => `
-      <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;">
-        <span>${esc(p.name)} ${p.published ? '' : '<span style="color:var(--muted);">(unpublished)</span>'}</span>
-        <span style="display:flex;gap:0.4rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;gap:0.6rem;">
+        <span>${esc(p.name)} ${p.published ? '' : '<span style="color:var(--muted);">(unpublished)</span>'} <span style="color:var(--muted);">&middot; ${(p.images||[]).length} image${(p.images||[]).length===1?'':'s'}</span></span>
+        <span style="display:flex;gap:0.4rem;flex-shrink:0;">
+          <button class="players-btn" onclick="editNewsPost('${p.id}')">Edit</button>
           <button class="players-btn" onclick="toggleNewsAdmin('${p.id}', ${p.published})">${p.published ? 'Unpublish' : 'Publish'}</button>
           <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="deleteNewsAdmin('${p.id}')">Delete</button>
         </span>
@@ -2534,7 +2591,11 @@ async function toggleNewsAdmin(id, published) {
 }
 async function deleteNewsAdmin(id) {
   if (!confirm('Delete this post?')) return;
-  try { await adminRest('news_posts?id=eq.' + id, { method: 'DELETE' }); loadAdminNews(); loadNews(); }
+  try {
+    await adminRest('news_posts?id=eq.' + id, { method: 'DELETE' });
+    if (editingNewsId === id) cancelNewsEdit();
+    loadAdminNews(); loadNews();
+  }
   catch (e) { console.error(e); alert('Could not delete post.'); }
 }
 
@@ -2568,74 +2629,6 @@ function loadAdminRoleDefsList() {
   document.getElementById('role-defs-list').innerHTML = names.length ? names.map(r => `
     <span class="role-tag" style="border-color:${esc(rolesMap[r])};color:${esc(rolesMap[r])};margin-right:0.4rem;">${esc(r)} <span style="cursor:pointer;margin-left:0.3rem;color:var(--red);" onclick="deleteRoleDef('${esc(r)}')">&times;</span></span>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">No roles yet.</div>';
 }
-
-let editingBadgeName = null;
-
-async function createBadgeDef() {
-  const badge_name = document.getElementById('badge-name-input').value.trim();
-  const icon = document.getElementById('badge-icon-input').value.trim() || null;
-  const color = document.getElementById('badge-color-input').value;
-  if (!badge_name) return alert('Badge name is required.');
-  try {
-    if (editingBadgeName && editingBadgeName !== badge_name) {
-      // Renaming: badge_name is the primary key, so this is a delete + recreate.
-      // Also update every team member currently wearing the old badge name.
-      await adminRest('badge_defs?badge_name=eq.' + encodeURIComponent(editingBadgeName), { method: 'DELETE' });
-      await adminRest('badge_defs', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ badge_name, icon, color }) });
-      const members = await adminRest('team_members?select=id,badges&badges=cs.' + encodeURIComponent(JSON.stringify([editingBadgeName])));
-      await Promise.all((members || []).map(m => adminRest('team_members?id=eq.' + m.id, {
-        method: 'PATCH', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ badges: m.badges.map(b => b === editingBadgeName ? badge_name : b) }),
-      })));
-    } else {
-      await adminRest('badge_defs', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ badge_name, icon, color }) });
-    }
-    editingBadgeName = null;
-    document.getElementById('badge-name-input').value = '';
-    document.getElementById('badge-icon-input').value = '';
-    document.getElementById('badge-color-input').value = '#c8a0ff';
-    document.getElementById('badge-create-btn').textContent = 'Add Badge';
-    const rows = await adminRest('badge_defs?select=*');
-    badgeDefsMap = Object.fromEntries(rows.map(b => [b.badge_name, { color: b.color, icon: b.icon }]));
-    loadAdminBadgeDefsList();
-    renderTmBadgeChips();
-    renderTeam();
-    loadAdminTeamList();
-  } catch (e) { console.error(e); alert('Could not save badge.'); }
-}
-function editBadgeDef(name) {
-  editingBadgeName = name;
-  document.getElementById('badge-name-input').value = name;
-  document.getElementById('badge-icon-input').value = badgeIcon(name) || '';
-  document.getElementById('badge-color-input').value = badgeColor(name) || '#c8a0ff';
-  document.getElementById('badge-create-btn').textContent = 'Update Badge';
-  document.getElementById('badge-name-input').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-async function deleteBadgeDef(name) {
-  if (!confirm('Delete this badge? It will be removed from anyone currently wearing it.')) return;
-  try {
-    await adminRest('badge_defs?badge_name=eq.' + encodeURIComponent(name), { method: 'DELETE' });
-    delete badgeDefsMap[name];
-    if (editingBadgeName === name) {
-      editingBadgeName = null;
-      document.getElementById('badge-name-input').value = '';
-      document.getElementById('badge-icon-input').value = '';
-      document.getElementById('badge-create-btn').textContent = 'Add Badge';
-    }
-    loadAdminBadgeDefsList();
-    renderTmBadgeChips();
-    renderTeam();
-  } catch (e) { console.error(e); alert('Could not delete badge.'); }
-}
-function loadAdminBadgeDefsList() {
-  const el = document.getElementById('badge-defs-list');
-  if (!el) return;
-  const names = Object.keys(badgeDefsMap);
-  el.innerHTML = names.length ? names.map(b => `
-    <span class="role-tag" style="border-color:${esc(badgeColor(b))};color:${esc(badgeColor(b))};margin-right:0.4rem;cursor:pointer;" onclick="editBadgeDef('${esc(b)}')">${badgeIcon(b)?esc(badgeIcon(b))+' ':''}${esc(b)} <span style="cursor:pointer;margin-left:0.3rem;color:var(--red);" onclick="event.stopPropagation();deleteBadgeDef('${esc(b)}')">&times;</span></span>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">No badges yet.</div>';
-}
-document.getElementById('badge-create-btn')?.addEventListener('click', createBadgeDef);
-document.getElementById('tm-badge-add-btn')?.addEventListener('click', addTmBadge);
 
 document.getElementById('tm-create-btn')?.addEventListener('click', saveTeamMember);
 document.getElementById('news-create-btn')?.addEventListener('click', createNewsPost);
@@ -2676,12 +2669,15 @@ document.getElementById('news-create-btn')?.addEventListener('click', createNews
     const avatarHtml = r.avatar_url
       ? `<img src="${esc(r.avatar_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" />`
       : `<div style="width:24px;height:24px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--muted);">${esc((r.username||'?').charAt(0).toUpperCase())}</div>`;
+    const modBtn = isAdmin
+      ? `<button onclick="deleteReviewAdmin('${r.id}','${esc(r.server_id)}')" title="Delete review (admin)" style="background:none;border:1px solid rgba(255,68,102,0.4);color:var(--red);cursor:pointer;font-size:0.7rem;border-radius:4px;padding:0.1rem 0.4rem;">Delete</button>`
+      : '';
     return `
       <div style="border:1px solid var(--border);border-radius:8px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
           ${avatarHtml}
           <span style="font-size:0.82rem;color:#fff;">${esc(r.username)}</span>
-          <span style="margin-left:auto;">${starsHtml(r.rating, '0.75rem')}</span>
+          <span style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">${starsHtml(r.rating, '0.75rem')}${modBtn}</span>
         </div>
         ${r.comment ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${esc(r.comment)}</div>` : ''}
         <div style="font-size:0.65rem;color:var(--muted);margin-top:0.3rem;">${esc(time)}</div>
