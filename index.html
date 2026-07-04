@@ -672,6 +672,7 @@
     <li><button onclick="showPage('news')"     id="nav-news">News</button></li>
     <li><button onclick="showPage('team')"     id="nav-team">Team</button></li>
     <li><button onclick="showPage('programs')" id="nav-programs">Programs</button></li>
+    <li><button onclick="showPage('admin')" id="nav-admin" style="display:none;">Admin</button></li>
   </ul>
   <div class="nav-actions">
     <a class="nav-discord-btn" id="nav-discord-btn" href="#" target="_blank" rel="noopener">Join Discord</a>
@@ -816,6 +817,73 @@
   <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-programs"></span> &middot; Powered by area12.lol</footer>
 </div>
 
+<div class="page" id="page-admin">
+  <div class="section">
+    <div class="section-label">// Restricted</div>
+    <h2 class="section-title">Admin</h2>
+
+    <div class="section-sub">Add / Edit Team Member</div>
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
+      Discord ID is optional — leave blank to list someone on the Team page without giving them admin.
+      Any role grants admin access.
+    </p>
+    <div class="leader-card" style="max-width:520px;margin-bottom:2rem;">
+      <div style="display:flex;flex-direction:column;gap:0.6rem;">
+        <input class="search-box" type="text" id="tm-name" placeholder="Display name" style="max-width:none;" />
+        <input class="search-box" type="text" id="tm-discord-id" placeholder="Discord ID (optional — required for admin access)" style="max-width:none;" />
+        <input class="search-box" type="text" id="tm-discord-tag" placeholder="Discord tag (optional, for display)" style="max-width:none;" />
+        <select class="filter-select" id="tm-section" style="max-width:none;">
+          <option value="team">Team</option>
+          <option value="leadership">Leadership</option>
+        </select>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.3rem;" id="tm-role-chips"></div>
+        <div style="display:flex;gap:0.5rem;">
+          <select class="filter-select" id="tm-role-picker" style="flex:1;"></select>
+          <button class="btn" type="button" id="tm-role-add-btn">Add Role</button>
+        </div>
+        <button class="btn btn-primary" id="tm-create-btn" style="align-self:flex-start;">Save Team Member</button>
+      </div>
+    </div>
+    <div class="team-grid" id="admin-team-list" style="margin-bottom:2rem;"></div>
+
+    <div class="section-sub">Users</div>
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
+      Everyone who has ever logged in with Discord (from chat messages and reviews — Supabase auth doesn't expose a full user list via the public API, so this is derived from activity).
+    </p>
+    <div id="admin-users-list"></div>
+
+    <div class="section-sub">Reviews Moderation</div>
+    <div id="admin-reviews-list"></div>
+
+    <div class="section-sub">Chat Moderation</div>
+    <div id="admin-chat-list"></div>
+
+    <div class="section-sub">Vanity Slugs</div>
+    <div style="display:flex;gap:0.5rem;max-width:420px;margin-bottom:0.8rem;flex-wrap:wrap;">
+      <input class="search-box" type="text" id="slug-input" placeholder="slug" style="max-width:140px;" />
+      <select class="filter-select" id="slug-server-select" style="flex:1;min-width:180px;"></select>
+      <button class="btn btn-primary" id="slug-create-btn">Add</button>
+    </div>
+    <div id="admin-slugs-list"></div>
+
+    <div class="section-sub">Server Overrides</div>
+    <select class="filter-select" id="override-server-select" style="max-width:320px;margin-bottom:0.8rem;"></select>
+    <div id="override-form" style="display:none;max-width:520px;" class="leader-card"></div>
+
+    <div class="section-sub">News</div>
+    <div class="leader-card" style="max-width:520px;margin-bottom:1rem;">
+      <div style="display:flex;flex-direction:column;gap:0.6rem;">
+        <input class="search-box" type="text" id="news-name" placeholder="Title" style="max-width:none;" />
+        <textarea id="news-desc" placeholder="Description" rows="3" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
+        <input class="search-box" type="text" id="news-images" placeholder="Image URLs, comma separated" style="max-width:none;" />
+        <button class="btn btn-primary" id="news-create-btn" style="align-self:flex-start;">Publish Post</button>
+      </div>
+    </div>
+    <div id="admin-news-list"></div>
+  </div>
+  <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-admin"></span> &middot; Powered by area12.lol</footer>
+</div>
+
 <!-- PLAYERS OVERLAY MODAL -->
 <div class="players-overlay" id="players-overlay" onclick="closePlayersOverlayOutside(event)">
   <div class="players-modal">
@@ -860,6 +928,15 @@
   //   news/post-name-1/image1.png ...
   const NEWS_BASE_URL = 'news';
 
+  const SUPABASE_URL = 'https://vyueydffrvbqwczcuing.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_KoJgDwxyiYtmdltnqieQ-w_pv7jwl1W';
+  const SUPABASE_HEADERS = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+  };
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   let siteData    = null;
   let rolesMap     = {};
   let allServers   = [];       // official Montresique servers (marked with REAL_MARK)
@@ -870,6 +947,7 @@
   let pendingModalServerId = null; // set by the router if ?server=ID was requested before servers loaded
   let newsPosts = [];     // [{ id, name, description, images }]
   let newsLoaded = false;
+  let isAdmin = false;
 
   // Montresique member lookup — built once siteData loads, used to badge players in the list.
   // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
@@ -907,15 +985,24 @@
     const year = new Date().getFullYear();
     document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
 
-    try {
-      const [dRes, rRes] = await Promise.all([fetch('data/data.json'), fetch('data/roles.json')]);
-            siteData = await dRes.json();
-            rolesMap = await rRes.json();
-          } catch(e) {
-            console.error('Failed to load JSON data', e);
-            siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
-            rolesMap = {};
-          }
+  try {
+        const [teamRows, roleRows] = await Promise.all([
+          fetch(SUPABASE_URL + '/rest/v1/team_members?select=*&order=section.asc,sort_order.asc', { headers: SUPABASE_HEADERS }).then(r => r.json()),
+          fetch(SUPABASE_URL + '/rest/v1/role_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.json()),
+        ]);
+        siteData = {
+          leadership: teamRows.filter(m => m.section === 'leadership'),
+          team: teamRows.filter(m => m.section === 'team'),
+          main_server_id: '',
+          discord_invite: '',
+          programs: [],
+        };
+        rolesMap = Object.fromEntries(roleRows.map(r => [r.role_name, r.color]));
+      } catch(e) {
+        console.error('Failed to load team/role data', e);
+        siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
+        rolesMap = {};
+      }
 
     if (siteData.discord_invite) {
       document.getElementById('nav-discord-btn').href = siteData.discord_invite;
@@ -937,7 +1024,7 @@
   // ── Query-param routing (?tab=servers, ?server=SERVER_ID) ──
   // Works on a single static index.html with no server-side routing needed,
   // which is required for GitHub Pages (path-based routes 404 on refresh/direct link).
-  const VALID_TABS = ['home', 'servers', 'allservers', 'news', 'team', 'programs'];
+  const VALID_TABS = ['home', 'servers', 'allservers', 'news', 'team', 'programs', 'admin'];
 
   function showPage(id, push = true) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1077,6 +1164,20 @@
     const cached = playersCache[server.server_id];
     if (!cached) return null;
     return cached.players.some(p => typeof p === 'object' && (p?.gender || '').toLowerCase() === 'admin');
+  }
+
+  async function refreshAdminStatus() {
+    isAdmin = false;
+    document.getElementById('nav-admin').style.display = 'none';
+    if (!discordUser?.id) return;
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/team_members?select=roles&discord_id=eq.' + encodeURIComponent(discordUser.id), { headers: SUPABASE_HEADERS });
+      const rows = res.ok ? await res.json() : [];
+      isAdmin = !!rows[0] && (rows[0].roles || []).length > 0;
+    } catch (e) { console.error(e); }
+    document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
+    if (isAdmin) loadAdminPanel();
+    else if (document.getElementById('page-admin').classList.contains('active')) showPage('home');
   }
 
   function serverHasOwnerOnline(server) {
@@ -1769,6 +1870,7 @@
     const postId = params.get('post');
 
     const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
+    if (targetTab === 'admin' && !isAdmin) targetTab = 'home';
     showPage(targetTab, false); // never push here; we're reading the URL, not writing it
 
     if (serverId) {
@@ -1796,15 +1898,6 @@
   route(false);
 
   // ═══════════════════════ CHAT + AUTH (Discord login via Supabase Auth) ═══════════════════════
-
-  const SUPABASE_URL = 'https://vyueydffrvbqwczcuing.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_KoJgDwxyiYtmdltnqieQ-w_pv7jwl1W';
-  const SUPABASE_HEADERS = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-  };
-
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let discordUser = null;
   let authReady = false; // becomes true once we've resolved the very first session check
@@ -1880,6 +1973,7 @@
     discordUser = discordUserFromSession(session);
     authReady = true;
     updateChatAuthState();
+    refreshAdminStatus();
     if (chatOpen) loadChatMessages();
   }
 
@@ -2065,6 +2159,291 @@
 
   initChat();
 
+  let tmSelectedRoles = [];
+
+function populateRolePicker() {
+  const sel = document.getElementById('tm-role-picker');
+  if (!sel) return;
+  const available = Object.keys(rolesMap).filter(r => !tmSelectedRoles.includes(r));
+  sel.innerHTML = available.length ? available.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('') : '<option value="">No more roles</option>';
+}
+function renderTmRoleChips() {
+  const el = document.getElementById('tm-role-chips');
+  if (!el) return;
+  el.innerHTML = tmSelectedRoles.map(r => `
+    <span class="role-tag" style="border-color:${esc(roleColor(r))};color:${esc(roleColor(r))};">
+      ${esc(r)} <span style="cursor:pointer;margin-left:0.3rem;" onclick="removeTmRole('${esc(r)}')">&times;</span>
+    </span>`).join('') || '<span style="color:var(--muted);font-size:0.75rem;">No roles added yet.</span>';
+  populateRolePicker();
+}
+function addTmRole() {
+  const sel = document.getElementById('tm-role-picker');
+  const role = sel.value;
+  if (!role || tmSelectedRoles.includes(role)) return;
+  tmSelectedRoles.push(role);
+  renderTmRoleChips();
+}
+function removeTmRole(role) {
+  tmSelectedRoles = tmSelectedRoles.filter(r => r !== role);
+  renderTmRoleChips();
+}
+
+async function sbAuthedHeaders() {
+  const { data } = await supabaseClient.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? Object.assign({}, SUPABASE_HEADERS, { Authorization: 'Bearer ' + token }) : SUPABASE_HEADERS;
+}
+async function adminRest(path, opts = {}) {
+  const headers = Object.assign({}, await sbAuthedHeaders(), opts.headers || {});
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, opts, { headers }));
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text().catch(() => ''));
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+let liveServersForAdmin = [];
+
+async function loadAdminPanel() {
+  renderTmRoleChips();
+  loadAdminTeamList();
+  loadAdminUsers();
+  loadAdminReviews();
+  loadAdminChat();
+  loadAdminServersAndSlugs();
+  loadAdminNews();
+}
+
+async function saveTeamMember() {
+  const name = document.getElementById('tm-name').value.trim();
+  const discord_id = document.getElementById('tm-discord-id').value.trim() || null;
+  const discord_tag = document.getElementById('tm-discord-tag').value.trim() || null;
+  const section = document.getElementById('tm-section').value;
+  const roles = [...tmSelectedRoles];
+  if (!name) return alert('Name is required.');
+  try {
+    await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+    ['tm-name','tm-discord-id','tm-discord-tag'].forEach(id => document.getElementById(id).value = '');
+    tmSelectedRoles = [];
+    renderTmRoleChips();
+    loadAdminTeamList();
+    buildMemberLookup();
+  } catch (e) { console.error(e); alert('Could not save team member.'); }
+}
+async function deleteTeamMember(id) {
+  if (!confirm('Remove this team member? This also revokes any admin access their roles granted.')) return;
+  try { await adminRest('team_members?id=eq.' + id, { method: 'DELETE' }); loadAdminTeamList(); }
+  catch (e) { console.error(e); alert('Could not remove member.'); }
+}
+async function loadAdminTeamList() {
+  const el = document.getElementById('admin-team-list');
+  try {
+    const rows = await adminRest('team_members?select=*&order=section.asc,sort_order.asc');
+    el.innerHTML = rows.map(m => `
+      <div class="member-card">
+        <div class="member-roles">${roleTagsHtml(m.roles)}</div>
+        <div class="member-name">${esc(m.name)}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">${m.discord_id ? 'Discord linked' : 'No Discord linked'} &middot; ${esc(m.section)}</div>
+        <button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="deleteTeamMember('${m.id}')">Remove</button>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No team members yet.</div>';
+  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load team.</div>'; }
+}
+
+// USERS — derived from chat_messages + server_reviews since Supabase's public REST API
+// doesn't expose the full auth.users list; this shows everyone who has actually interacted.
+async function loadAdminUsers() {
+  const el = document.getElementById('admin-users-list');
+  try {
+    const [chats, reviews, team] = await Promise.all([
+      adminRest('chat_messages?select=discord_user_id,username,avatar_url,created_at&order=created_at.desc&limit=500'),
+      adminRest('server_reviews?select=discord_user_id,username,avatar_url,created_at&order=created_at.desc&limit=500'),
+      adminRest('team_members?select=discord_id,name,roles'),
+    ]);
+    const byId = {};
+    [...chats, ...reviews].forEach(r => {
+      if (!r.discord_user_id) return;
+      if (!byId[r.discord_user_id] || new Date(r.created_at) > new Date(byId[r.discord_user_id].last_seen)) {
+        byId[r.discord_user_id] = { discord_user_id: r.discord_user_id, username: r.username, avatar_url: r.avatar_url, last_seen: r.created_at };
+      }
+    });
+    const teamById = Object.fromEntries(team.filter(t => t.discord_id).map(t => [t.discord_id, t]));
+    const rows = Object.values(byId).sort((a, b) => new Date(b.last_seen) - new Date(a.last_seen));
+    el.innerHTML = rows.length ? `<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+      <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:0.4rem;">User</th><th style="padding:0.4rem;">Discord ID</th><th style="padding:0.4rem;">Team roles</th><th style="padding:0.4rem;">Last seen</th></tr></thead>
+      <tbody>${rows.map(u => `<tr style="border-top:1px solid var(--border);">
+        <td style="padding:0.4rem;">${esc(u.username || 'Unknown')}</td>
+        <td style="padding:0.4rem;color:var(--muted);">${esc(u.discord_user_id)}</td>
+        <td style="padding:0.4rem;">${teamById[u.discord_user_id] ? roleTagsHtml(teamById[u.discord_user_id].roles) : '<span style="color:var(--muted);">not on team</span>'}</td>
+        <td style="padding:0.4rem;color:var(--muted);">${new Date(u.last_seen).toLocaleDateString()}</td>
+      </tr>`).join('')}</tbody></table>` : '<div style="color:var(--muted);font-size:0.8rem;">No user activity yet.</div>';
+  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users.</div>'; }
+}
+
+async function loadAdminReviews() {
+  const el = document.getElementById('admin-reviews-list');
+  try {
+    const rows = await adminRest('server_reviews?select=*&order=created_at.desc&limit=200');
+    el.innerHTML = rows.map(r => `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
+        <div>
+          <div style="font-size:0.82rem;color:#fff;">${esc(r.username)} &middot; ${starsHtml(r.rating, '0.7rem')} &middot; <span style="color:var(--muted);">${esc(r.server_id)}</span></div>
+          ${r.comment ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">${esc(r.comment)}</div>` : ''}
+        </div>
+        <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteReviewAdmin('${r.id}','${esc(r.server_id)}')">Delete</button>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No reviews yet.</div>';
+  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load reviews.</div>'; }
+}
+async function deleteReviewAdmin(id, serverId) {
+  if (!confirm('Delete this review?')) return;
+  try {
+    await adminRest('server_reviews?id=eq.' + id, { method: 'DELETE' });
+    loadAdminReviews();
+    const openSection = document.getElementById('reviews-section-' + serverId);
+    if (openSection) renderReviewsSection(serverId, 'reviews-section-' + serverId);
+  } catch (e) { console.error(e); alert('Could not delete review.'); }
+}
+
+async function loadAdminChat() {
+  const el = document.getElementById('admin-chat-list');
+  try {
+    const rows = await adminRest('chat_messages?select=*&order=created_at.desc&limit=100');
+    el.innerHTML = rows.map(m => `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
+        <div style="font-size:0.8rem;"><span style="color:var(--violet);">${esc(m.username)}</span>: ${esc(m.message)}</div>
+        <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteChatAdmin('${m.id}')">Delete</button>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No messages yet.</div>';
+  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load chat.</div>'; }
+}
+async function deleteChatAdmin(id) {
+  if (!confirm('Delete this message?')) return;
+  try { await adminRest('chat_messages?id=eq.' + id, { method: 'DELETE' }); loadAdminChat(); if (chatOpen) loadChatMessages(); }
+  catch (e) { console.error(e); alert('Could not delete message.'); }
+}
+
+async function loadAdminServersAndSlugs() {
+  liveServersForAdmin = allServersFull.length ? allServersFull : allServers;
+  const opts = liveServersForAdmin.map(s => `<option value="${esc(s.server_id)}">${esc(s.server_name || s.server_id)}</option>`).join('');
+  document.getElementById('slug-server-select').innerHTML = opts || '<option value="">No servers found</option>';
+  document.getElementById('override-server-select').innerHTML = '<option value="">Select a server&hellip;</option>' + opts;
+  loadAdminSlugs();
+}
+async function addVanitySlug() {
+  const slug = document.getElementById('slug-input').value.trim();
+  const server_id = document.getElementById('slug-server-select').value;
+  if (!slug || !server_id) return alert('Pick a slug and a server.');
+  try {
+    await adminRest('vanity_slugs', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ slug, server_id }) });
+    document.getElementById('slug-input').value = '';
+    loadAdminSlugs();
+  } catch (e) { console.error(e); alert('Could not save slug (is it already taken?).'); }
+}
+async function loadAdminSlugs() {
+  const el = document.getElementById('admin-slugs-list');
+  try {
+    const rows = await adminRest('vanity_slugs?select=*&order=created_at.desc');
+    el.innerHTML = rows.map(r => {
+      const srv = liveServersForAdmin.find(s => s.server_id === r.server_id);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;">
+        <span><span style="color:var(--violet);">${esc(r.slug)}</span> &rarr; ${esc(srv?.server_name || r.server_id)}</span>
+        <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="deleteSlugAdmin('${esc(r.slug)}')">Delete</button>
+      </div>`;
+    }).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No vanity slugs yet.</div>';
+  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load slugs.</div>'; }
+}
+async function deleteSlugAdmin(slug) {
+  try { await adminRest('vanity_slugs?slug=eq.' + encodeURIComponent(slug), { method: 'DELETE' }); loadAdminSlugs(); }
+  catch (e) { console.error(e); alert('Could not delete slug.'); }
+}
+
+document.getElementById('override-server-select')?.addEventListener('change', async (e) => {
+  const id = e.target.value;
+  const form = document.getElementById('override-form');
+  if (!id) { form.style.display = 'none'; return; }
+  form.style.display = 'block';
+  form.dataset.serverId = id;
+  let o = {};
+  try { const rows = await adminRest('server_overrides?select=*&server_id=eq.' + encodeURIComponent(id)); o = rows[0] || {}; }
+  catch (err) { console.error(err); }
+  form.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0.6rem;">
+      <input class="search-box" type="text" id="ov-name" placeholder="Name override" value="${esc(o.name_override||'')}" style="max-width:none;" />
+      <input class="search-box" type="text" id="ov-admin" placeholder="Admin name override" value="${esc(o.admin_name_override||'')}" style="max-width:none;" />
+      <textarea id="ov-desc" placeholder="Description override" rows="2" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;">${esc(o.description_override||'')}</textarea>
+      <input class="search-box" type="text" id="ov-url" placeholder="Discord URL override" value="${esc(o.url_override||'')}" style="max-width:none;" />
+      <label style="font-size:0.8rem;color:var(--muted);"><input type="checkbox" id="ov-hidden" ${o.hidden?'checked':''} /> Hidden from public lists</label>
+      <label style="font-size:0.8rem;color:var(--muted);"><input type="checkbox" id="ov-featured" ${o.featured?'checked':''} /> Featured</label>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-primary" onclick="saveOverrideAdmin()">Save</button>
+        <button class="btn btn-outline" onclick="resetOverrideAdmin()">Reset to Live Data</button>
+      </div>
+    </div>`;
+});
+async function saveOverrideAdmin() {
+  const id = document.getElementById('override-form').dataset.serverId;
+  const body = {
+    server_id: id,
+    name_override: document.getElementById('ov-name').value.trim() || null,
+    admin_name_override: document.getElementById('ov-admin').value.trim() || null,
+    description_override: document.getElementById('ov-desc').value.trim() || null,
+    url_override: document.getElementById('ov-url').value.trim() || null,
+    hidden: document.getElementById('ov-hidden').checked,
+    featured: document.getElementById('ov-featured').checked,
+  };
+  try {
+    await adminRest('server_overrides?on_conflict=server_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(body) });
+    alert('Saved. Reloading server list.');
+    loadServers();
+  } catch (e) { console.error(e); alert('Could not save override.'); }
+}
+async function resetOverrideAdmin() {
+  const id = document.getElementById('override-form').dataset.serverId;
+  if (!confirm('Reset this server to live data?')) return;
+  try {
+    await adminRest('server_overrides?server_id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+    document.getElementById('override-server-select').dispatchEvent(new Event('change'));
+    loadServers();
+  } catch (e) { console.error(e); alert('Could not reset.'); }
+}
+
+async function createNewsPost() {
+  const name = document.getElementById('news-name').value.trim();
+  const description = document.getElementById('news-desc').value.trim();
+  const images = document.getElementById('news-images').value.split(',').map(s => s.trim()).filter(Boolean);
+  if (!name) return alert('Title is required.');
+  try {
+    await adminRest('news_posts', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images, published: true }) });
+    ['news-name','news-desc','news-images'].forEach(id => document.getElementById(id).value = '');
+    loadAdminNews();
+    loadNews();
+  } catch (e) { console.error(e); alert('Could not publish post.'); }
+}
+async function loadAdminNews() {
+  const el = document.getElementById('admin-news-list');
+  try {
+    const rows = await adminRest('news_posts?select=*&order=created_at.desc');
+    el.innerHTML = rows.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;">
+        <span>${esc(p.name)} ${p.published ? '' : '<span style="color:var(--muted);">(unpublished)</span>'}</span>
+        <span style="display:flex;gap:0.4rem;">
+          <button class="players-btn" onclick="toggleNewsAdmin('${p.id}', ${p.published})">${p.published ? 'Unpublish' : 'Publish'}</button>
+          <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="deleteNewsAdmin('${p.id}')">Delete</button>
+        </span>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No posts yet.</div>';
+  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load news.</div>'; }
+}
+async function toggleNewsAdmin(id, published) {
+  try { await adminRest('news_posts?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ published: !published }) }); loadAdminNews(); loadNews(); }
+  catch (e) { console.error(e); alert('Could not update post.'); }
+}
+async function deleteNewsAdmin(id) {
+  if (!confirm('Delete this post?')) return;
+  try { await adminRest('news_posts?id=eq.' + id, { method: 'DELETE' }); loadAdminNews(); loadNews(); }
+  catch (e) { console.error(e); alert('Could not delete post.'); }
+}
+
+document.getElementById('tm-role-add-btn')?.addEventListener('click', addTmRole);
+document.getElementById('tm-create-btn')?.addEventListener('click', saveTeamMember);
+document.getElementById('slug-create-btn')?.addEventListener('click', addVanitySlug);
+document.getElementById('news-create-btn')?.addEventListener('click', createNewsPost);
   // ═══════════════════════ SERVER REVIEWS ═══════════════════════
 
   let reviewsCache = {}; // server_id -> { reviews: [...], ts }
