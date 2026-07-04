@@ -2844,7 +2844,7 @@
           loadAdminServersAndSlugs().catch(e => console.error(e));
         }
       }
-      if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 60 * 1000 && allServersFull.length) {
+      if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 1000 && allServersFull.length) {
         window.lastSnapshotAt = Date.now();
         fetch(SUPABASE_URL + '/rest/v1/player_count_snapshots', {
           method: 'POST', headers: Object.assign({}, SUPABASE_HEADERS, { Prefer: 'return=minimal' }),
@@ -3676,16 +3676,28 @@
     }
 
     function analyticsRangeSince() {
-      const range = document.getElementById('analytics-range-select')?.value || 'day';
-      const since = new Date();
-      if (range === 'week') {
-        since.setDate(since.getDate() - 7);
-      } else if (range === 'month') {
-        since.setDate(since.getDate() - 30);
-      } else {
-        since.setHours(0, 0, 0, 0);
-      }
-      return since;
+        const range = document.getElementById('analytics-range-select')?.value || 'day';
+        const since = new Date();
+
+        switch (range) {
+            case 'today':
+                since.setHours(0, 0, 0, 0);
+                break;
+
+            case 'day':
+                since.setDate(since.getDate() - 1);
+                break;
+
+            case 'week':
+                since.setDate(since.getDate() - 7);
+                break;
+
+            case 'month':
+                since.setDate(since.getDate() - 30);
+                break;
+        }
+
+        return since;
     }
 
     async function loadAdminAnalytics() {
@@ -3707,7 +3719,8 @@
         rows.forEach(r => { sums[r.server_id] = (sums[r.server_id] || 0) + r.player_count; counts[r.server_id] = (counts[r.server_id] || 0) + 1; });
         let topId = null, topAvg = -1;
         Object.keys(sums).forEach(id => { const avg = sums[id] / counts[id]; if (avg > topAvg) { topAvg = avg; topId = id; } });
-        document.getElementById('stat-most-played').textContent = topId ? `${latest[topId].server_name} (avg ${topAvg.toFixed(1)})` : 'No data yet';
+        document.getElementById('stat-most-played').textContent =
+        topId ? latest[topId].server_name : 'No data yet';
       } catch (e) {
         console.error(e);
         document.getElementById('stat-most-played').textContent = 'Error';
