@@ -195,17 +195,6 @@
     .pillars { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 0.5rem; }
     .pillar { color: var(--violet); font-size: 0.95rem; letter-spacing: 0.06em; }
 
-    .main-server-block {
-      background: var(--card); border: 1px solid rgba(0,229,255,0.18);
-      border-radius: 10px; padding: 1.8rem 2rem; position: relative; overflow: hidden;
-    }
-    .main-server-block::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, var(--cyan), var(--violet));
-    }
-    .main-server-name { font-size: 1.5rem; color: #fff; margin-bottom: 0.7rem; }
-    .main-server-desc { font-size: 0.87rem; color: var(--muted); line-height: 1.75; white-space: pre-line; }
-
     .leadership-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
     .leader-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 8px;
@@ -282,18 +271,8 @@
       cursor: pointer;
     }
     .server-card:hover { border-color: rgba(200,160,255,0.3); transform: translateY(-2px); }
-    .server-card.featured { border-color: rgba(0,229,255,0.25); }
-    .server-card.featured::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, var(--cyan), var(--violet));
-    }
     .server-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
     .server-name { font-size: 0.98rem; color: #fff; line-height: 1.25; flex: 1; }
-    .flagship-badge {
-      font-size: 0.58rem; letter-spacing: 0.1em; background: rgba(0,229,255,0.1);
-      border: 1px solid rgba(0,229,255,0.3); color: var(--cyan); border-radius: 3px;
-      padding: 0.1rem 0.4rem; margin-left: 0.4rem; vertical-align: middle;
-    }
     .unofficial-badge {
       font-size: 0.58rem; letter-spacing: 0.1em; background: rgba(136,138,170,0.1);
       border: 1px solid rgba(136,138,170,0.3); color: var(--muted); border-radius: 3px;
@@ -718,16 +697,6 @@
   <hr class="divider" />
 
   <div class="section">
-    <div class="section-label">// Main Server</div>
-    <h2 class="section-title">Main Server</h2>
-    <div class="main-server-block" id="home-main-server">
-      <div class="main-server-name" style="color:var(--muted)">Loading&hellip;</div>
-    </div>
-  </div>
-
-  <hr class="divider" />
-
-  <div class="section">
     <div class="section-label">// Leadership</div>
     <h2 class="section-title">Leadership</h2>
     <div class="leadership-grid" id="home-leadership"></div>
@@ -846,6 +815,11 @@
           <select class="filter-select" id="tm-role-picker" style="flex:1;"></select>
           <button class="btn" type="button" id="tm-role-add-btn">Add Role</button>
         </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.3rem;" id="tm-badge-chips"></div>
+        <div style="display:flex;gap:0.5rem;">
+          <select class="filter-select" id="tm-badge-picker" style="flex:1;"></select>
+          <button class="btn" type="button" id="tm-badge-add-btn">Add Badge</button>
+        </div>
         <button class="btn btn-primary" id="tm-create-btn" style="align-self:flex-start;">Save Team Member</button>
       </div>
     </div>
@@ -865,6 +839,18 @@
       <button class="btn btn-primary" id="role-create-btn">Add Role</button>
     </div>
 
+    <div class="section-sub">Badges</div>
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
+      Badges are separate from roles — they don't grant admin access, they're just extra tags shown on a member's card (e.g. an emoji icon). Define them here, then assign them from the team member form above.
+    </p>
+    <div id="badge-defs-list" style="margin-bottom:0.8rem;"></div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;max-width:520px;margin-bottom:2rem;">
+      <input class="search-box" type="text" id="badge-name-input" placeholder="Badge name" style="max-width:150px;" />
+      <input class="search-box" type="text" id="badge-icon-input" placeholder="Icon (emoji, optional)" style="max-width:150px;" />
+      <input class="search-box" type="color" id="badge-color-input" value="#c8a0ff" style="max-width:60px;padding:0.2rem;" />
+      <button class="btn btn-primary" id="badge-create-btn">Add Badge</button>
+    </div>
+
     <div class="section-sub">Reviews Moderation</div>
     <div id="admin-reviews-list"></div>
     <input class="search-box" type="text" id="reviews-search" placeholder="Search reviews&hellip;" style="max-width:300px;margin-bottom:0.6rem;" oninput="filterAdminReviews()" />
@@ -872,15 +858,7 @@
     <div class="section-sub">Chat Moderation</div>
     <div id="admin-chat-list"></div>
     <input class="search-box" type="text" id="chat-search" placeholder="Search messages&hellip;" style="max-width:300px;margin-bottom:0.6rem;" oninput="filterAdminChat()" />
-
-    <div class="section-sub">Vanity Slugs</div>
-    <div style="display:flex;gap:0.5rem;max-width:420px;margin-bottom:0.8rem;flex-wrap:wrap;">
-      <input class="search-box" type="text" id="slug-input" placeholder="slug" style="max-width:140px;" />
-      <select class="filter-select" id="slug-server-select" style="flex:1;min-width:180px;"></select>
-      <button class="btn btn-primary" id="slug-create-btn">Add</button>
-    </div>
-    <div id="admin-slugs-list"></div>
-
+    
     <div class="section-sub">Server Overrides</div>
     <select class="filter-select" id="override-server-select" style="max-width:320px;margin-bottom:0.8rem;"></select>
     <div id="override-form" style="display:none;max-width:520px;" class="leader-card"></div>
@@ -1005,23 +983,25 @@
     document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
 
   try {
-          const [teamRows, roleRows, dataJson] = await Promise.all([
+          const [teamRows, roleRows, badgeRows, dataJson] = await Promise.all([
             fetch(SUPABASE_URL + '/rest/v1/team_members?select=*&order=section.asc,sort_order.asc', { headers: SUPABASE_HEADERS }).then(r => r.json()),
             fetch(SUPABASE_URL + '/rest/v1/role_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.json()),
+            fetch(SUPABASE_URL + '/rest/v1/badge_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.ok ? r.json() : []).catch(() => []),
             fetch('data/data.json').then(r => r.ok ? r.json() : { programs: [] }).catch(() => ({ programs: [] })),
           ]);
           siteData = {
             leadership: teamRows.filter(m => m.section === 'leadership'),
             team: teamRows.filter(m => m.section === 'team'),
-            main_server_id: '',
             discord_invite: '',
             programs: dataJson.programs || [],
           };
           rolesMap = Object.fromEntries(roleRows.map(r => [r.role_name, r.color]));
+          badgeDefsMap = Object.fromEntries(badgeRows.map(b => [b.badge_name, { color: b.color, icon: b.icon }]));
         } catch(e) {
-          console.error('Failed to load team/role/program data', e);
-          siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
+          console.error('Failed to load team/role/badge/program data', e);
+          siteData = { leadership: [], team: [], programs: [] };
           rolesMap = {};
+          badgeDefsMap = {};
         }
 
     if (siteData.discord_invite) {
@@ -1350,14 +1330,9 @@
       const freshOfficial = dedupe(rawOfficial);
       const freshAll = dedupe(rawAll);
 
-      const featuredId = siteData?.main_server_id;
-      const byFeaturedThenPop = (a, b) => {
-        if (a.server_id === featuredId) return -1;
-        if (b.server_id === featuredId) return 1;
-        return (b.connected_players || 0) - (a.connected_players || 0);
-      };
-      freshOfficial.sort(byFeaturedThenPop);
-      freshAll.sort(byFeaturedThenPop);
+      const byPop = (a, b) => (b.connected_players || 0) - (a.connected_players || 0);
+      freshOfficial.sort(byPop);
+      freshAll.sort(byPop);
 
       allServers = freshOfficial;
       allServersFull = freshAll;
@@ -1389,10 +1364,8 @@
     document.getElementById('allservers-loading').style.display = 'none';
     serversLoaded = true;
 
-    const featuredId = siteData?.main_server_id;
-    const flagship = allServers.find(s => s.server_id === featuredId) || allServers[0] || null;
+    const flagship = allServers[0] || null;
     updateNavDot(flagship);
-    renderMainServer(flagship);
 
     const sig = serversSignature(allServers);
     if (sig !== lastServersSignature) {
@@ -1417,6 +1390,10 @@
     if (isAdmin && document.getElementById('page-admin')?.classList.contains('active')) {
       const el = document.getElementById('stat-players-today');
       if (el) el.textContent = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
+      const overrideSel = document.getElementById('override-server-select');
+      if (overrideSel && overrideSel.options.length <= 1 && (allServersFull.length || allServers.length)) {
+        loadAdminServersAndSlugs().catch(e => console.error(e));
+      }
     }
     if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 60 * 1000 && allServersFull.length) {
       window.lastSnapshotAt = Date.now();
@@ -1430,18 +1407,6 @@
   function updateNavDot(s) {
     const dot = document.getElementById('nav-dot');
     dot.className = (s && s.online && !s.suspended) ? 'nav-dot online' : 'nav-dot offline';
-  }
-
-  function renderMainServer(s) {
-    const el = document.getElementById('home-main-server');
-    if (!s) { el.innerHTML = '<div class="main-server-name" style="color:var(--muted)">Unavailable.</div>'; return; }
-    el.innerHTML = `
-      <div class="main-server-name">${esc(s.server_name || 'Unnamed')}</div>
-      <div class="main-server-desc">${esc(s.description || '')}</div>
-      <div style="margin-top:0.9rem;display:flex;gap:0.5rem;align-items:center;">
-        <button class="players-btn" id="players-toggle-btn-home" onclick="openPlayersOverlay('${esc(s.server_id)}')">List Players</button>
-      </div>
-    `;
   }
 
   // Unified renderer for both the "servers" (official) and "allservers" (full) pages.
@@ -1460,10 +1425,7 @@
     if (filtered.length === 0) { empty.style.display = 'block'; return; }
     empty.style.display = 'none';
 
-    const featuredId = siteData?.main_server_id;
-
     filtered.forEach(s => {
-      const isFeatured = s.server_id === featuredId;
       const isOfficial = ((s.server_name || '') + ' ' + (s.description || '')).includes(REAL_MARK);
       const isOnline   = s.online && !s.suspended;
       const sc = isOnline ? 'online' : 'offline';
@@ -1471,13 +1433,12 @@
       const players = `${s.connected_players ?? 0}/${s.max_players ?? '?'}`;
 
       const card = document.createElement('div');
-      card.className = 'server-card' + (isFeatured ? ' featured' : '');
+      card.className = 'server-card';
       card.onclick = () => openServerModal(s.server_id);
       card.innerHTML = `
         <div class="server-top">
           <div class="server-name">
             ${esc(s.server_name || 'Unnamed')}
-            ${isFeatured ? '<span class="flagship-badge">MAIN SERVER</span>' : ''}
             ${(scope === 'allservers' && !isOfficial) ? '<span class="unofficial-badge">UNOFFICIAL</span>' : ''}
           </div>
           <div class="status-dot ${sc}"></div>
@@ -1507,7 +1468,6 @@
   function openServerModal(serverId, push = true) {
     const s = allServers.find(x => x.server_id === serverId) || allServersFull.find(x => x.server_id === serverId);
     if (!s) return;
-    const isFeatured = s.server_id === siteData?.main_server_id;
     const isOnline   = s.online && !s.suspended;
     const sc = isOnline ? 'online' : 'offline';
     const st = isOnline ? 'ONLINE' : 'OFFLINE';
@@ -1517,7 +1477,6 @@
       <button class="modal-close" onclick="closeServerModal()">&times;</button>
       <div class="modal-title">
         ${esc(s.server_name || 'Unnamed')}
-        ${isFeatured ? '<span class="flagship-badge">MAIN SERVER</span>' : ''}
       </div>
       <div class="modal-meta">
         <span class="meta-pill pill-players">P ${players}</span>
@@ -1888,14 +1847,7 @@
   async function route(push = false) {
       const params = new URLSearchParams(location.search);
       const tab = params.get('tab');
-      let serverId = params.get('server');
-      if (serverId) {
-        try {
-          const res = await fetch(SUPABASE_URL + '/rest/v1/vanity_slugs?select=server_id&slug=eq.' + encodeURIComponent(serverId), { headers: SUPABASE_HEADERS });
-          const rows = res.ok ? await res.json() : [];
-          if (rows[0]) serverId = rows[0].server_id;
-        } catch (e) { console.error(e); }
-      }
+      const serverId = params.get('server');
     const postId = params.get('post');
 
     const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
@@ -2217,6 +2169,38 @@ function removeTmRole(role) {
   renderTmRoleChips();
 }
 
+let tmSelectedBadges = [];
+
+function badgeColor(name) { return badgeDefsMap[name]?.color || '#888aaa'; }
+function badgeIcon(name) { return badgeDefsMap[name]?.icon || ''; }
+
+function populateBadgePicker() {
+  const sel = document.getElementById('tm-badge-picker');
+  if (!sel) return;
+  const available = Object.keys(badgeDefsMap).filter(b => !tmSelectedBadges.includes(b));
+  sel.innerHTML = available.length ? available.map(b => `<option value="${esc(b)}">${esc(badgeIcon(b) ? badgeIcon(b) + ' ' : '')}${esc(b)}</option>`).join('') : '<option value="">No badges defined yet</option>';
+}
+function renderTmBadgeChips() {
+  const el = document.getElementById('tm-badge-chips');
+  if (!el) return;
+  el.innerHTML = tmSelectedBadges.map(b => `
+    <span class="role-tag" style="border-color:${esc(badgeColor(b))};color:${esc(badgeColor(b))};">
+      ${badgeIcon(b) ? esc(badgeIcon(b)) + ' ' : ''}${esc(b)} <span style="cursor:pointer;margin-left:0.3rem;" onclick="removeTmBadge('${esc(b)}')">&times;</span>
+    </span>`).join('') || '<span style="color:var(--muted);font-size:0.75rem;">No badges added yet.</span>';
+  populateBadgePicker();
+}
+function addTmBadge() {
+  const sel = document.getElementById('tm-badge-picker');
+  const badge = sel.value;
+  if (!badge || tmSelectedBadges.includes(badge)) return;
+  tmSelectedBadges.push(badge);
+  renderTmBadgeChips();
+}
+function removeTmBadge(badge) {
+  tmSelectedBadges = tmSelectedBadges.filter(b => b !== badge);
+  renderTmBadgeChips();
+}
+
 async function sbAuthedHeaders() {
   const { data } = await supabaseClient.auth.getSession();
   const token = data?.session?.access_token;
@@ -2234,14 +2218,26 @@ let liveServersForAdmin = [];
 
 async function loadAdminPanel() {
   renderTmRoleChips();
-  loadAdminRoleDefsList();
-  loadAdminAnalytics();
-  loadAdminTeamList();
-  loadAdminUsers();
-  loadAdminReviews();
-  loadAdminChat();
-  loadAdminServersAndSlugs();
-  loadAdminNews();
+  loadAdminBadgeDefsList();
+  const tasks = [
+    ['role defs',    loadAdminRoleDefsList],
+    ['analytics',    loadAdminAnalytics],
+    ['team list',    loadAdminTeamList],
+    ['users',        loadAdminUsers],
+    ['reviews',      loadAdminReviews],
+    ['chat',         loadAdminChat],
+    ['servers/overrides', loadAdminServersAndSlugs],
+    ['news',         loadAdminNews],
+  ];
+  const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
+  results.forEach((r, i) => { if (r.status === 'rejected') console.error('Admin panel section failed to load:', tasks[i][0], r.reason); });
+
+  // If servers hadn't loaded yet when we first populated the dropdowns, retry
+  // once loadServers() finishes populating allServersFull, so the overrides/
+  // servers dropdown doesn't stay stuck empty.
+  if (!allServersFull.length && !allServers.length) {
+    setTimeout(() => { if (isAdmin) loadAdminServersAndSlugs().catch(e => console.error(e)); }, 3000);
+  }
 }
 
 async function loadAdminAnalytics() {
@@ -2270,20 +2266,24 @@ async function saveTeamMember() {
   const discord_tag = document.getElementById('tm-discord-tag').value.trim() || null;
   const section = document.getElementById('tm-section').value;
   const roles = [...tmSelectedRoles];
+  const badges = [...tmSelectedBadges];
   if (!name) return alert('Name is required.');
   try {
     if (editingMemberId) {
-      await adminRest('team_members?id=eq.' + editingMemberId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+      await adminRest('team_members?id=eq.' + editingMemberId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles, badges }) });
     } else {
-      await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+      await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles, badges }) });
     }
     editingMemberId = null;
     ['tm-name','tm-discord-id','tm-discord-tag'].forEach(id => document.getElementById(id).value = '');
     tmSelectedRoles = [];
+    tmSelectedBadges = [];
     renderTmRoleChips();
+    renderTmBadgeChips();
     document.getElementById('tm-create-btn').textContent = 'Save Team Member';
     loadAdminTeamList();
     buildMemberLookup();
+    renderTeam();
   } catch (e) { console.error(e); alert('Could not save team member.'); }
 }
 async function deleteTeamMember(id) {
@@ -2296,8 +2296,8 @@ async function loadAdminTeamList() {
   try {
     const rows = await adminRest('team_members?select=*&order=section.asc,sort_order.asc');
     el.innerHTML = rows.map(m => `
-      <div class="member-card" style="cursor:pointer;" onclick='editTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)}, ${JSON.stringify(m.discord_id||"")}, ${JSON.stringify(m.discord_tag||"")}, ${JSON.stringify(m.section)}, ${JSON.stringify(m.roles||[])})'>
-        <div class="member-roles">${roleTagsHtml(m.roles)}</div>
+      <div class="member-card" style="cursor:pointer;" onclick='editTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)}, ${JSON.stringify(m.discord_id||"")}, ${JSON.stringify(m.discord_tag||"")}, ${JSON.stringify(m.section)}, ${JSON.stringify(m.roles||[])}, ${JSON.stringify(m.badges||[])})'>
+        <div class="member-roles">${roleTagsHtml(m.roles)}${(m.badges||[]).map(b => `<span class="role-tag" style="color:${esc(badgeColor(b))};border-color:${esc(badgeColor(b))}55;background:${esc(badgeColor(b))}14;">${badgeIcon(b)?esc(badgeIcon(b))+' ':''}${esc(b)}</span>`).join('')}</div>
         <div class="member-name">${esc(m.name)}</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">${m.discord_id ? 'Discord linked' : 'No Discord linked'} &middot; ${esc(m.section)} &middot; click to edit</div>
         <button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="event.stopPropagation();deleteTeamMember('${m.id}')">Remove</button>
@@ -2305,14 +2305,16 @@ async function loadAdminTeamList() {
   } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load team.</div>'; }
 }
 
-function editTeamMember(id, name, discordId, discordTag, section, roles) {
+function editTeamMember(id, name, discordId, discordTag, section, roles, badges) {
   editingMemberId = id;
   document.getElementById('tm-name').value = name || '';
   document.getElementById('tm-discord-id').value = discordId || '';
   document.getElementById('tm-discord-tag').value = discordTag || '';
   document.getElementById('tm-section').value = section || 'team';
   tmSelectedRoles = [...(roles || [])];
+  tmSelectedBadges = [...(badges || [])];
   renderTmRoleChips();
+  renderTmBadgeChips();
   document.getElementById('tm-create-btn').textContent = 'Update Team Member';
   document.getElementById('tm-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -2404,36 +2406,7 @@ async function deleteChatAdmin(id) {
 async function loadAdminServersAndSlugs() {
   liveServersForAdmin = allServersFull.length ? allServersFull : allServers;
   const opts = liveServersForAdmin.map(s => `<option value="${esc(s.server_id)}">${esc(s.server_name || s.server_id)}</option>`).join('');
-  document.getElementById('slug-server-select').innerHTML = opts || '<option value="">No servers found</option>';
   document.getElementById('override-server-select').innerHTML = '<option value="">Select a server&hellip;</option>' + opts;
-  loadAdminSlugs();
-}
-async function addVanitySlug() {
-  const slug = document.getElementById('slug-input').value.trim();
-  const server_id = document.getElementById('slug-server-select').value;
-  if (!slug || !server_id) return alert('Pick a slug and a server.');
-  try {
-    await adminRest('vanity_slugs', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ slug, server_id }) });
-    document.getElementById('slug-input').value = '';
-    loadAdminSlugs();
-  } catch (e) { console.error(e); alert('Could not save slug (is it already taken?).'); }
-}
-async function loadAdminSlugs() {
-  const el = document.getElementById('admin-slugs-list');
-  try {
-    const rows = await adminRest('vanity_slugs?select=*&order=created_at.desc');
-    el.innerHTML = rows.map(r => {
-      const srv = liveServersForAdmin.find(s => s.server_id === r.server_id);
-      return `<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;">
-        <span><span style="color:var(--violet);">${esc(r.slug)}</span> &rarr; ${esc(srv?.server_name || r.server_id)}</span>
-        <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="deleteSlugAdmin('${esc(r.slug)}')">Delete</button>
-      </div>`;
-    }).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No vanity slugs yet.</div>';
-  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load slugs.</div>'; }
-}
-async function deleteSlugAdmin(slug) {
-  try { await adminRest('vanity_slugs?slug=eq.' + encodeURIComponent(slug), { method: 'DELETE' }); loadAdminSlugs(); }
-  catch (e) { console.error(e); alert('Could not delete slug.'); }
 }
 
 document.getElementById('override-server-select')?.addEventListener('change', async (e) => {
@@ -2574,8 +2547,44 @@ function loadAdminRoleDefsList() {
   document.getElementById('role-defs-list').innerHTML = names.length ? names.map(r => `
     <span class="role-tag" style="border-color:${esc(rolesMap[r])};color:${esc(rolesMap[r])};margin-right:0.4rem;">${esc(r)} <span style="cursor:pointer;margin-left:0.3rem;color:var(--red);" onclick="deleteRoleDef('${esc(r)}')">&times;</span></span>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">No roles yet.</div>';
 }
+
+async function createBadgeDef() {
+  const badge_name = document.getElementById('badge-name-input').value.trim();
+  const icon = document.getElementById('badge-icon-input').value.trim() || null;
+  const color = document.getElementById('badge-color-input').value;
+  if (!badge_name) return alert('Badge name is required.');
+  try {
+    await adminRest('badge_defs', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ badge_name, icon, color }) });
+    document.getElementById('badge-name-input').value = '';
+    document.getElementById('badge-icon-input').value = '';
+    const rows = await adminRest('badge_defs?select=*');
+    badgeDefsMap = Object.fromEntries(rows.map(b => [b.badge_name, { color: b.color, icon: b.icon }]));
+    loadAdminBadgeDefsList();
+    renderTmBadgeChips();
+    renderTeam();
+  } catch (e) { console.error(e); alert('Could not save badge.'); }
+}
+async function deleteBadgeDef(name) {
+  if (!confirm('Delete this badge? It will be removed from anyone currently wearing it.')) return;
+  try {
+    await adminRest('badge_defs?badge_name=eq.' + encodeURIComponent(name), { method: 'DELETE' });
+    delete badgeDefsMap[name];
+    loadAdminBadgeDefsList();
+    renderTmBadgeChips();
+    renderTeam();
+  } catch (e) { console.error(e); alert('Could not delete badge.'); }
+}
+function loadAdminBadgeDefsList() {
+  const el = document.getElementById('badge-defs-list');
+  if (!el) return;
+  const names = Object.keys(badgeDefsMap);
+  el.innerHTML = names.length ? names.map(b => `
+    <span class="role-tag" style="border-color:${esc(badgeColor(b))};color:${esc(badgeColor(b))};margin-right:0.4rem;">${badgeIcon(b)?esc(badgeIcon(b))+' ':''}${esc(b)} <span style="cursor:pointer;margin-left:0.3rem;color:var(--red);" onclick="deleteBadgeDef('${esc(b)}')">&times;</span></span>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">No badges yet.</div>';
+}
+document.getElementById('badge-create-btn')?.addEventListener('click', createBadgeDef);
+document.getElementById('tm-badge-add-btn')?.addEventListener('click', addTmBadge);
+
 document.getElementById('tm-create-btn')?.addEventListener('click', saveTeamMember);
-document.getElementById('slug-create-btn')?.addEventListener('click', addVanitySlug);
 document.getElementById('news-create-btn')?.addEventListener('click', createNewsPost);
   // ═══════════════════════ SERVER REVIEWS ═══════════════════════
 
