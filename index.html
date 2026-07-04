@@ -823,7 +823,7 @@
     <h2 class="section-title">Admin</h2>
     <div class="section-sub">Analytics</div>
     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
-      <div class="leader-card"><div style="font-size:1.8rem;color:var(--violet);" id="stat-players-today">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Players Today</div></div>
+      <div class="leader-card"><div style="font-size:1.8rem;color:var(--violet);" id="stat-players-today">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Players Online</div></div>
       <div class="leader-card"><div style="font-size:1.4rem;color:var(--cyan);" id="stat-most-played">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Most Played Server Today</div></div>
     </div>
 
@@ -1414,6 +1414,10 @@
       }
     }
 
+    if (isAdmin && document.getElementById('page-admin')?.classList.contains('active')) {
+      const el = document.getElementById('stat-players-today');
+      if (el) el.textContent = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
+    }
     if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 60 * 1000 && allServersFull.length) {
       window.lastSnapshotAt = Date.now();
       fetch(SUPABASE_URL + '/rest/v1/player_count_snapshots', {
@@ -2241,13 +2245,18 @@ async function loadAdminPanel() {
 }
 
 async function loadAdminAnalytics() {
+  // Live combined player count, straight from the currently loaded server list — no snapshot needed.
+  const liveTotal = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
+  document.getElementById('stat-players-today').textContent = liveTotal;
+
+  // "Most played" still uses today's snapshots, since that's an average-over-time stat,
+  // not a point-in-time one.
   try {
     const since = new Date(); since.setHours(0,0,0,0);
     const rows = await adminRest('player_count_snapshots?select=*&captured_at=gte.' + since.toISOString() + '&order=captured_at.desc');
-    if (!rows.length) { document.getElementById('stat-players-today').textContent = '0'; document.getElementById('stat-most-played').textContent = 'No data yet'; return; }
+    if (!rows.length) { document.getElementById('stat-most-played').textContent = 'No data yet'; return; }
     const latest = {};
     rows.forEach(r => { if (!(r.server_id in latest)) latest[r.server_id] = r; });
-    document.getElementById('stat-players-today').textContent = Object.values(latest).reduce((s, r) => s + r.player_count, 0);
     const sums = {}, counts = {};
     rows.forEach(r => { sums[r.server_id] = (sums[r.server_id]||0) + r.player_count; counts[r.server_id] = (counts[r.server_id]||0) + 1; });
     let topId = null, topAvg = -1;
@@ -2255,7 +2264,6 @@ async function loadAdminAnalytics() {
     document.getElementById('stat-most-played').textContent = topId ? `${latest[topId].server_name} (avg ${topAvg.toFixed(1)})` : 'No data yet';
   } catch (e) { console.error(e); }
 }
-
 async function saveTeamMember() {
   const name = document.getElementById('tm-name').value.trim();
   const discord_id = document.getElementById('tm-discord-id').value.trim() || null;
@@ -2491,7 +2499,7 @@ async function uploadNewsImages(files) {
       headers: { Authorization: 'Bearer ' + token, apikey: SUPABASE_ANON_KEY, 'Content-Type': file.type },
       body: file,
     });
-    if (!res.ok) throw new Error('Upload failed for ' + file.name);
+    if (!res.ok) { const body = await res.text(); throw new Error('Upload failed for ' + file.name + ': ' + res.status + ' ' + body); }
     urls.push(`${SUPABASE_URL}/storage/v1/object/public/public-media/${path}`);
   }
   status.textContent = '';
