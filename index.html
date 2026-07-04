@@ -1657,6 +1657,219 @@
     #chat-widget-tab.tab-visible {
       display: flex;
     }
+
+    /* macOS-style Admin Panel */
+    #page-admin {
+      display: none !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1000;
+      background: rgba(8, 8, 12, 0.45);
+      backdrop-filter: blur(16px);
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+      pointer-events: none;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #page-admin.active {
+      display: flex !important;
+    }
+
+    #page-admin.window-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .macos-panel {
+      width: 1000px;
+      max-width: 95vw;
+      height: 700px;
+      max-height: 85vh;
+      background: rgba(20, 20, 35, 0.75);
+      border: 1px solid rgba(200, 160, 255, 0.15);
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(200, 160, 255, 0.05);
+      backdrop-filter: blur(25px) saturate(120%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #page-admin.window-open .macos-panel {
+      transform: scale(1);
+    }
+
+    .macos-titlebar {
+      height: 48px;
+      background: rgba(10, 10, 20, 0.4);
+      border-bottom: 1px solid rgba(200, 160, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .macos-traffic-lights {
+      position: absolute;
+      left: 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .macos-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: filter 0.1s;
+    }
+
+    .macos-dot::after {
+      content: '';
+      font-size: 8px;
+      font-weight: bold;
+      color: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .macos-traffic-lights:hover .macos-dot::after {
+      opacity: 1;
+    }
+
+    .macos-dot.macos-close {
+      background: #ff5f56;
+      border: 0.5px solid #e0443e;
+    }
+
+    .macos-dot.macos-close::after {
+      content: '×';
+    }
+
+    .macos-dot.macos-minimize {
+      background: #ffbd2e;
+      border: 0.5px solid #dfa123;
+    }
+
+    .macos-dot.macos-minimize::after {
+      content: '−';
+    }
+
+    .macos-dot.macos-maximize {
+      background: #27c93f;
+      border: 0.5px solid #1aab29;
+    }
+
+    .macos-dot.macos-maximize::after {
+      content: '+';
+    }
+
+    .macos-dot:hover {
+      filter: brightness(0.85);
+    }
+
+    .macos-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--violet);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .macos-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background: rgba(10, 10, 20, 0.2);
+    }
+
+    .macos-sidebar {
+      width: 220px;
+      background: rgba(15, 15, 25, 0.4);
+      border-right: 1px solid rgba(200, 160, 255, 0.08);
+      padding: 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .macos-sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .macos-sidebar-item:hover {
+      background: rgba(200, 160, 255, 0.05);
+      color: var(--text);
+    }
+
+    .macos-sidebar-item.active {
+      background: rgba(200, 160, 255, 0.12);
+      color: var(--violet);
+      font-weight: bold;
+    }
+
+    .macos-sidebar-icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .macos-content-pane {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      box-sizing: border-box;
+      background: rgba(10, 10, 20, 0.1);
+    }
+
+    .macos-tab-content {
+      display: none;
+      animation: macos-fade-in 0.25s ease-out;
+    }
+
+    .macos-tab-content.active {
+      display: block;
+    }
+
+    @keyframes macos-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 
@@ -1861,103 +2074,183 @@
       Powered by area12.lol</footer>
   </div>
 
-  <div class="page" id="page-admin">
-    <div class="section">
-      <div class="section-label">// Restricted</div>
-      <h2 class="section-title">Admin</h2>
-      <div class="section-sub">Analytics</div>
-      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
-        <select class="filter-select" id="analytics-range-select" onchange="loadAdminAnalytics()">
-          <option value="day">Past Day</option>
-          <option value="week">Past Week</option>
-          <option value="month">Past Month</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
-        <div class="leader-card">
-          <div style="font-size:1.8rem;color:var(--violet);" id="stat-players-today">&hellip;</div>
-          <div style="font-size:0.72rem;color:var(--muted);">Players Online</div>
+  <div class="page" id="page-admin" onclick="closeAdminPanelOutside(event)">
+    <div class="macos-panel" onclick="event.stopPropagation()">
+      <div class="macos-titlebar">
+        <div class="macos-traffic-lights">
+          <div class="macos-dot macos-close" onclick="closeAdminPanel()"></div>
+          <div class="macos-dot macos-minimize" onclick="closeAdminPanel()"></div>
+          <div class="macos-dot macos-maximize" onclick="closeAdminPanel()"></div>
         </div>
-        <div class="leader-card">
-          <div style="font-size:1.4rem;color:var(--cyan);" id="stat-most-played">&hellip;</div>
-          <div style="font-size:0.72rem;color:var(--muted);" id="stat-most-played-label">Most Played Server</div>
-        </div>
+        <div class="macos-title">Montresique Admin Control Panel</div>
       </div>
-
-      <div class="section-sub">Add / Edit Team Member</div>
-      <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
-        Discord ID is optional — leave blank to list someone on the Team page without giving them admin.
-        Any role grants admin access.
-      </p>
-      <div class="leader-card" style="max-width:520px;margin-bottom:2rem;">
-        <div style="display:flex;flex-direction:column;gap:0.6rem;">
-          <input class="search-box" type="text" id="tm-name" placeholder="Display name" style="max-width:none;" />
-          <input class="search-box" type="text" id="tm-discord-id"
-            placeholder="Discord ID (optional — required for admin access)" style="max-width:none;" />
-          <input class="search-box" type="text" id="tm-discord-tag" placeholder="Discord tag (optional, for display)"
-            style="max-width:none;" />
-          <select class="filter-select" id="tm-section" style="max-width:none;">
-            <option value="team">Team</option>
-            <option value="leadership">Leadership</option>
-          </select>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.3rem;" id="tm-role-chips"></div>
-          <div style="display:flex;gap:0.5rem;">
-            <select class="filter-select" id="tm-role-picker" style="flex:1;"></select>
-            <button class="btn" type="button" id="tm-role-add-btn">Add Role</button>
+      <div class="macos-body">
+        <div class="macos-sidebar">
+          <div class="macos-sidebar-item active" data-tab="analytics" onclick="switchAdminTab('analytics')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path d="M18 20V10M12 20V4M6 20v-6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Analytics</span>
           </div>
-          <button class="btn btn-primary" id="tm-create-btn" style="align-self:flex-start;">Save Team Member</button>
-        </div>
-      </div>
-      <div class="team-grid" id="admin-team-list" style="margin-bottom:2rem;"></div>
-
-      <div class="section-sub">Users</div>
-      <div id="admin-users-list"></div>
-
-      <div class="section-sub">Roles</div>
-      <div id="role-defs-list" style="margin-bottom:0.8rem;"></div>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;max-width:420px;margin-bottom:2rem;">
-        <input class="search-box" type="text" id="role-name-input" placeholder="Role name" style="max-width:160px;" />
-        <input class="search-box" type="color" id="role-color-input" value="#c8a0ff"
-          style="max-width:60px;padding:0.2rem;" />
-        <button class="btn btn-primary" id="role-create-btn">Add Role</button>
-      </div>
-
-      <div class="section-sub">Reviews Moderation</div>
-      <input class="search-box" type="text" id="reviews-search" placeholder="Search reviews&hellip;"
-        style="max-width:300px;margin-bottom:0.8rem;" oninput="filterAdminReviews()" />
-      <div id="admin-reviews-list"></div>
-
-      <div class="section-sub">Chat Moderation</div>
-      <input class="search-box" type="text" id="chat-search" placeholder="Search messages&hellip;"
-        style="max-width:300px;margin-bottom:0.8rem;" oninput="filterAdminChat()" />
-      <div id="admin-chat-list"></div>
-
-      <div class="section-sub">Server Overrides</div>
-      <select class="filter-select" id="override-server-select" style="max-width:320px;margin-bottom:0.8rem;"></select>
-      <div id="override-form" style="display:none;max-width:520px;" class="leader-card"></div>
-
-      <div class="section-sub">News</div>
-      <div class="leader-card" style="max-width:520px;margin-bottom:1rem;">
-        <div style="display:flex;flex-direction:column;gap:0.6rem;">
-          <input class="search-box" type="text" id="news-name" placeholder="Title" style="max-width:none;" />
-          <textarea id="news-desc" placeholder="Description" rows="3"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
-          <div id="news-current-images" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
-          <div style="font-size:0.75rem;color:var(--muted);">Add image(s):</div>
-          <input type="file" id="news-image-file" accept="image/*" multiple
-            style="font-size:0.8rem;color:var(--muted);" />
-          <div id="news-upload-status" style="font-size:0.75rem;color:var(--muted);"></div>
-          <div style="display:flex;gap:0.5rem;">
-            <button class="btn btn-primary" id="news-create-btn" style="align-self:flex-start;">Publish Post</button>
-            <button class="btn btn-outline" id="news-cancel-btn" type="button"
-              style="align-self:flex-start;display:none;">Cancel Edit</button>
+          <div class="macos-sidebar-item" data-tab="team" onclick="switchAdminTab('team')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path
+                d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Team Members</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="users" onclick="switchAdminTab('users')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Users</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="roles" onclick="switchAdminTab('roles')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Roles</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="moderation" onclick="switchAdminTab('moderation')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Moderation</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="overrides" onclick="switchAdminTab('overrides')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            <span>Server Overrides</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="news" onclick="switchAdminTab('news')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
+              <path
+                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM16 8h2M16 12h2M16 16h2M6 8h6v8H6z"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>News</span>
+          </div>
+          <div
+            style="margin-top:auto;font-size:0.68rem;color:var(--muted);text-align:center;padding:10px 0;border-top:1px solid rgba(200, 160, 255, 0.04);">
+            <span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-admin"></span>
           </div>
         </div>
+        <div class="macos-content-pane">
+          <div class="macos-tab-content active" id="admin-tab-analytics">
+            <div class="section-label">// Restricted</div>
+            <h2 class="section-title">Admin Settings</h2>
+            <div class="section-sub">Analytics</div>
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+              <select class="filter-select" id="analytics-range-select" onchange="loadAdminAnalytics()">
+                <option value="today">Today</option>
+                <option value="day">Past Day</option>
+                <option value="week">Past Week</option>
+                <option value="month">Past Month</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+              <div class="leader-card">
+                <div style="font-size:1.8rem;color:var(--violet);" id="stat-players-today">&hellip;</div>
+                <div style="font-size:0.72rem;color:var(--muted);" id="stat-players-label">Players Online</div>
+              </div>
+              <div class="leader-card">
+                <div style="font-size:1.4rem;color:var(--cyan);" id="stat-most-played">&hellip;</div>
+                <div style="font-size:0.72rem;color:var(--muted);" id="stat-most-played-label">Most Played Server</div>
+              </div>
+            </div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-team">
+            <div class="section-sub" style="margin-top:0;">Add / Edit Team Member</div>
+            <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
+              Discord ID is optional — leave blank to list someone on the Team page without giving them admin.
+              Any role grants admin access.
+            </p>
+            <div class="leader-card" style="max-width:520px;margin-bottom:2rem;">
+              <div style="display:flex;flex-direction:column;gap:0.6rem;">
+                <input class="search-box" type="text" id="tm-name" placeholder="Display name" style="max-width:none;" />
+                <input class="search-box" type="text" id="tm-discord-id"
+                  placeholder="Discord ID (optional — required for admin access)" style="max-width:none;" />
+                <input class="search-box" type="text" id="tm-discord-tag"
+                  placeholder="Discord tag (optional, for display)" style="max-width:none;" />
+                <select class="filter-select" id="tm-section" style="max-width:none;">
+                  <option value="team">Team</option>
+                  <option value="leadership">Leadership</option>
+                </select>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.3rem;" id="tm-role-chips"></div>
+                <div style="display:flex;gap:0.5rem;">
+                  <select class="filter-select" id="tm-role-picker" style="flex:1;"></select>
+                  <button class="btn" type="button" id="tm-role-add-btn">Add Role</button>
+                </div>
+                <button class="btn btn-primary" id="tm-create-btn" style="align-self:flex-start;">Save Team
+                  Member</button>
+              </div>
+            </div>
+            <div class="section-sub">Team List</div>
+            <div class="team-grid" id="admin-team-list" style="margin-bottom:2rem;"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-users">
+            <div class="section-sub" style="margin-top:0;">Users</div>
+            <div id="admin-users-list"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-roles">
+            <div class="section-sub" style="margin-top:0;">Roles Definitions</div>
+            <div id="role-defs-list" style="margin-bottom:0.8rem;"></div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;max-width:420px;margin-bottom:2rem;">
+              <input class="search-box" type="text" id="role-name-input" placeholder="Role name"
+                style="max-width:160px;" />
+              <input class="search-box" type="color" id="role-color-input" value="#c8a0ff"
+                style="max-width:60px;padding:0.2rem;" />
+              <button class="btn btn-primary" id="role-create-btn">Add Role</button>
+            </div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-moderation">
+            <div class="section-sub" style="margin-top:0;">Reviews Moderation</div>
+            <input class="search-box" type="text" id="reviews-search" placeholder="Search reviews&hellip;"
+              style="max-width:300px;margin-bottom:0.8rem;" oninput="filterAdminReviews()" />
+            <div id="admin-reviews-list" style="margin-bottom:2rem;"></div>
+
+            <div class="section-sub">Chat Moderation</div>
+            <input class="search-box" type="text" id="chat-search" placeholder="Search messages&hellip;"
+              style="max-width:300px;margin-bottom:0.8rem;" oninput="filterAdminChat()" />
+            <div id="admin-chat-list"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-overrides">
+            <div class="section-sub" style="margin-top:0;">Server Overrides</div>
+            <select class="filter-select" id="override-server-select"
+              style="max-width:320px;margin-bottom:0.8rem;"></select>
+            <div id="override-form" style="display:none;max-width:520px;" class="leader-card"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-news">
+            <div class="section-sub" style="margin-top:0;">News</div>
+            <div class="leader-card" style="max-width:520px;margin-bottom:1rem;">
+              <div style="display:flex;flex-direction:column;gap:0.6rem;">
+                <input class="search-box" type="text" id="news-name" placeholder="Title" style="max-width:none;" />
+                <textarea id="news-desc" placeholder="Description" rows="3"
+                  style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
+                <div id="news-current-images" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+                <div style="font-size:0.75rem;color:var(--muted);">Add image(s):</div>
+                <input type="file" id="news-image-file" accept="image/*" multiple
+                  style="font-size:0.8rem;color:var(--muted);" />
+                <div id="news-upload-status" style="font-size:0.75rem;color:var(--muted);"></div>
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="btn btn-primary" id="news-create-btn" style="align-self:flex-start;">Publish
+                    Post</button>
+                  <button class="btn btn-outline" id="news-cancel-btn" type="button"
+                    style="align-self:flex-start;display:none;">Cancel Edit</button>
+                </div>
+              </div>
+            </div>
+            <div id="admin-news-list"></div>
+          </div>
+        </div>
       </div>
-      <div id="admin-news-list"></div>
     </div>
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-admin"></span> &middot; Powered
-      by area12.lol</footer>
   </div>
 
   <!-- PLAYERS OVERLAY MODAL -->
@@ -2026,6 +2319,7 @@
     let isAdmin = false;
     let editingMemberId = null;
     let overridesMap = {};
+    let lastActiveTab = 'home';
 
     // Montresique member lookup — built once siteData loads, used to badge players in the list.
     // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
@@ -2105,7 +2399,55 @@
     const VALID_TABS = ['home', 'servers', 'allservers', 'news', 'team', 'programs', 'admin'];
 
     function showPage(id, push = true) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      if (id === 'admin') {
+        const prevActive = document.querySelector('.nav-links button.active');
+        if (prevActive && prevActive.id !== 'nav-admin') {
+          lastActiveTab = prevActive.id.replace('nav-', '');
+        }
+
+        // Keep the background tab visually active in the layout, but show admin panel overlay
+        document.querySelectorAll('.page').forEach(p => {
+          if (p.id === 'page-' + lastActiveTab) {
+            p.classList.add('active');
+          } else if (p.id !== 'page-admin') {
+            p.classList.remove('active');
+          }
+        });
+        document.querySelectorAll('.nav-links button').forEach(b => {
+          if (b.id === 'nav-' + lastActiveTab) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+
+        document.getElementById('page-admin').classList.add('active');
+        document.getElementById('nav-admin').classList.add('active');
+        setTimeout(() => {
+          document.getElementById('page-admin').classList.add('window-open');
+        }, 10);
+
+        if (push) {
+          const params = new URLSearchParams(location.search);
+          params.set('tab', 'admin');
+          params.delete('server');
+          params.delete('post');
+          const qs = params.toString();
+          history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
+        }
+        return;
+      }
+
+      lastActiveTab = id;
+
+      document.getElementById('page-admin').classList.remove('active');
+      document.getElementById('page-admin').classList.remove('window-open');
+
+      document.querySelectorAll('.page').forEach(p => {
+        if (p.id !== 'page-admin') {
+          p.classList.remove('active');
+        }
+      });
       document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
       document.getElementById('page-' + id).classList.add('active');
       document.getElementById('nav-' + id).classList.add('active');
@@ -2116,13 +2458,36 @@
         } else {
           params.set('tab', id);
         }
-        // Switching tabs explicitly leaves any open server modal behind.
         params.delete('server');
         params.delete('post');
         const qs = params.toString();
         history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
       }
       window.scrollTo(0, 0);
+    }
+
+    function closeAdminPanel() {
+      showPage(lastActiveTab, true);
+    }
+
+    function closeAdminPanelOutside(event) {
+      if (event.target === document.getElementById('page-admin')) {
+        closeAdminPanel();
+      }
+    }
+
+    function switchAdminTab(tabName) {
+      document.querySelectorAll('.macos-sidebar-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      const activeItem = document.querySelector(`.macos-sidebar-item[data-tab="${tabName}"]`);
+      if (activeItem) activeItem.classList.add('active');
+
+      document.querySelectorAll('.macos-tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      const activeContent = document.getElementById(`admin-tab-${tabName}`);
+      if (activeContent) activeContent.classList.add('active');
     }
 
     function roleColor(role) { return rolesMap[role] || '#c8a0ff'; }
