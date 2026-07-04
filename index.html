@@ -964,7 +964,9 @@
   let newsPosts = [];     // [{ id, name, description, images }]
   let newsLoaded = false;
   let isAdmin = false;
+  let editingMemberId = null;
   let overridesMap = {};
+  let badgeDefsMap = {};
 
   // Montresique member lookup — built once siteData loads, used to badge players in the list.
   // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
@@ -1003,23 +1005,24 @@
     document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
 
   try {
-        const [teamRows, roleRows] = await Promise.all([
-          fetch(SUPABASE_URL + '/rest/v1/team_members?select=*&order=section.asc,sort_order.asc', { headers: SUPABASE_HEADERS }).then(r => r.json()),
-          fetch(SUPABASE_URL + '/rest/v1/role_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.json()),
-        ]);
-        siteData = {
-          leadership: teamRows.filter(m => m.section === 'leadership'),
-          team: teamRows.filter(m => m.section === 'team'),
-          main_server_id: '',
-          discord_invite: '',
-          programs: [],
-        };
-        rolesMap = Object.fromEntries(roleRows.map(r => [r.role_name, r.color]));
-      } catch(e) {
-        console.error('Failed to load team/role data', e);
-        siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
-        rolesMap = {};
-      }
+          const [teamRows, roleRows, dataJson] = await Promise.all([
+            fetch(SUPABASE_URL + '/rest/v1/team_members?select=*&order=section.asc,sort_order.asc', { headers: SUPABASE_HEADERS }).then(r => r.json()),
+            fetch(SUPABASE_URL + '/rest/v1/role_defs?select=*', { headers: SUPABASE_HEADERS }).then(r => r.json()),
+            fetch('data/data.json').then(r => r.ok ? r.json() : { programs: [] }).catch(() => ({ programs: [] })),
+          ]);
+          siteData = {
+            leadership: teamRows.filter(m => m.section === 'leadership'),
+            team: teamRows.filter(m => m.section === 'team'),
+            main_server_id: '',
+            discord_invite: '',
+            programs: dataJson.programs || [],
+          };
+          rolesMap = Object.fromEntries(roleRows.map(r => [r.role_name, r.color]));
+        } catch(e) {
+          console.error('Failed to load team/role/program data', e);
+          siteData = { main_server_id: '', leadership: [], team: [], programs: [] };
+          rolesMap = {};
+        }
 
     if (siteData.discord_invite) {
       document.getElementById('nav-discord-btn').href = siteData.discord_invite;
@@ -1668,7 +1671,7 @@
 
   const GENDER_ICONS = {
     admin:  'assets/crown.png',
-    staff:  'assets/crown.png',
+    staff:  'assets/staff.png',
     male:   'assets/gender_boy.png',
     female: 'assets/gender_girl.png',
   };
@@ -1878,20 +1881,17 @@
   }
 
   // ── Router: reads ?tab= and ?server=/?post= from the URL and reflects them in the UI ──
-  function route(push = false) {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    async function route(push = false) {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
-    let serverId = params.get('server');
-    if (serverId) {
-      try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/vanity_slugs?select=server_id&slug=eq.' + encodeURIComponent(serverId), { headers: SUPABASE_HEADERS });
-        const rows = res.ok ? await res.json() : [];
-        if (rows[0]) serverId = rows[0].server_id;
-      } catch (e) { console.error(e); }
-    }
+  async function route(push = false) {
+      const params = new URLSearchParams(location.search);
+      const tab = params.get('tab');
+      let serverId = params.get('server');
+      if (serverId) {
+        try {
+          const res = await fetch(SUPABASE_URL + '/rest/v1/vanity_slugs?select=server_id&slug=eq.' + encodeURIComponent(serverId), { headers: SUPABASE_HEADERS });
+          const rows = res.ok ? await res.json() : [];
+          if (rows[0]) serverId = rows[0].server_id;
+        } catch (e) { console.error(e); }
+      }
     const postId = params.get('post');
 
     const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
