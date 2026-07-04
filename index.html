@@ -821,6 +821,11 @@
   <div class="section">
     <div class="section-label">// Restricted</div>
     <h2 class="section-title">Admin</h2>
+    <div class="section-sub">Analytics</div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+      <div class="leader-card"><div style="font-size:1.8rem;color:var(--violet);" id="stat-players-today">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Players Today</div></div>
+      <div class="leader-card"><div style="font-size:1.4rem;color:var(--cyan);" id="stat-most-played">&hellip;</div><div style="font-size:0.72rem;color:var(--muted);">Most Played Server Today</div></div>
+    </div>
 
     <div class="section-sub">Add / Edit Team Member</div>
     <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">
@@ -852,11 +857,21 @@
     </p>
     <div id="admin-users-list"></div>
 
+    <div class="section-sub">Roles</div>
+    <div id="role-defs-list" style="margin-bottom:0.8rem;"></div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;max-width:420px;margin-bottom:2rem;">
+      <input class="search-box" type="text" id="role-name-input" placeholder="Role name" style="max-width:160px;" />
+      <input class="search-box" type="color" id="role-color-input" value="#c8a0ff" style="max-width:60px;padding:0.2rem;" />
+      <button class="btn btn-primary" id="role-create-btn">Add Role</button>
+    </div>
+
     <div class="section-sub">Reviews Moderation</div>
     <div id="admin-reviews-list"></div>
+    <input class="search-box" type="text" id="reviews-search" placeholder="Search reviews&hellip;" style="max-width:300px;margin-bottom:0.6rem;" oninput="filterAdminReviews()" />
 
     <div class="section-sub">Chat Moderation</div>
     <div id="admin-chat-list"></div>
+    <input class="search-box" type="text" id="chat-search" placeholder="Search messages&hellip;" style="max-width:300px;margin-bottom:0.6rem;" oninput="filterAdminChat()" />
 
     <div class="section-sub">Vanity Slugs</div>
     <div style="display:flex;gap:0.5rem;max-width:420px;margin-bottom:0.8rem;flex-wrap:wrap;">
@@ -875,7 +890,8 @@
       <div style="display:flex;flex-direction:column;gap:0.6rem;">
         <input class="search-box" type="text" id="news-name" placeholder="Title" style="max-width:none;" />
         <textarea id="news-desc" placeholder="Description" rows="3" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
-        <input class="search-box" type="text" id="news-images" placeholder="Image URLs, comma separated" style="max-width:none;" />
+        <input type="file" id="news-image-file" accept="image/*" multiple style="font-size:0.8rem;color:var(--muted);" />
+        <div id="news-upload-status" style="font-size:0.75rem;color:var(--muted);"></div>
         <button class="btn btn-primary" id="news-create-btn" style="align-self:flex-start;">Publish Post</button>
       </div>
     </div>
@@ -948,6 +964,7 @@
   let newsPosts = [];     // [{ id, name, description, images }]
   let newsLoaded = false;
   let isAdmin = false;
+  let overridesMap = {};
 
   // Montresique member lookup — built once siteData loads, used to badge players in the list.
   // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
@@ -1081,7 +1098,7 @@
   function memberCard(m) {
     return `
       <div class="member-card">
-        <div class="member-roles">${roleTagsHtml(m.roles)}</div>
+        <div class="member-roles">${roleTagsHtml(m.roles)}${(m.badges||[]).map(b => { const d = badgeDefsMap[b]; const c = d?.color || '#888aaa'; return `<span class="role-tag" style="color:${esc(c)};border-color:${esc(c)}55;background:${esc(c)}14;">${d?.icon?esc(d.icon)+' ':''}${esc(b)}</span>`; }).join('')}</div>
         <div class="member-name">${esc(m.name)}</div>
         ${m.discord_tag ? `<div class="member-discord" onclick="openDiscordModal('${esc(m.discord_id||'')}','${esc(m.discord_tag)}','${esc(m.name)}')">Discord - ${esc(m.discord_tag)}</div>` : ''}
       </div>`;
@@ -1342,6 +1359,24 @@
       allServers = freshOfficial;
       allServersFull = freshAll;
 
+      try {
+        const ovRes = await fetch(SUPABASE_URL + '/rest/v1/server_overrides?select=*', { headers: SUPABASE_HEADERS });
+        if (ovRes.ok) overridesMap = Object.fromEntries((await ovRes.json()).map(o => [o.server_id, o]));
+      } catch (e) { console.error('Could not load overrides', e); }
+
+      function applyOverride(s) {
+        const o = overridesMap[s.server_id];
+        if (!o) return s;
+        return { ...s,
+          server_name: o.name_override ?? s.server_name,
+          description: o.description_override ?? s.description,
+          admin_name: o.admin_name_override ?? s.admin_name,
+          url: o.url_override ?? s.url,
+        };
+      }
+      allServers = allServers.map(applyOverride).filter(s => !overridesMap[s.server_id]?.hidden);
+      allServersFull = allServersFull.map(applyOverride).filter(s => !overridesMap[s.server_id]?.hidden);
+
     } catch(e) {
       console.error('Server fetch failed, keeping cached server list:', e);
       // Intentionally do NOT clear allServers/allServersFull here — keep showing the last good cache.
@@ -1368,13 +1403,20 @@
       renderList('allservers');
     }
 
-    // If a deep-link (?server=ID) was requested before the server list finished loading, open it now.
     if (pendingModalServerId) {
       const pool = [...allServers, ...allServersFull];
       if (pool.some(s => s.server_id === pendingModalServerId)) {
         openServerModal(pendingModalServerId, false);
         pendingModalServerId = null;
       }
+    }
+
+    if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 60 * 1000 && allServersFull.length) {
+      window.lastSnapshotAt = Date.now();
+      fetch(SUPABASE_URL + '/rest/v1/player_count_snapshots', {
+        method: 'POST', headers: Object.assign({}, SUPABASE_HEADERS, { Prefer: 'return=minimal' }),
+        body: JSON.stringify(allServersFull.map(s => ({ server_id: s.server_id, server_name: s.server_name || s.server_id, player_count: s.connected_players || 0 }))),
+      }).catch(e => console.error('Snapshot failed', e));
     }
   }
 
@@ -1755,48 +1797,20 @@
   async function loadNews() {
     const loadingEl = document.getElementById('news-loading');
     const emptyEl   = document.getElementById('news-empty');
-    const gridEl    = document.getElementById('news-grid');
-
     try {
-      const manifestRes = await fetch(`${NEWS_BASE_URL}/manifest.json`, { cache: 'no-store' });
-      if (!manifestRes.ok) throw new Error('HTTP ' + manifestRes.status);
-      const manifest = await manifestRes.json();
-      const postIds = Array.isArray(manifest.posts) ? manifest.posts : [];
-
-      const posts = await Promise.all(postIds.map(async id => {
-        try {
-          const postRes = await fetch(`${NEWS_BASE_URL}/${encodeURIComponent(id)}/post.json`, { cache: 'no-store' });
-          if (!postRes.ok) throw new Error('HTTP ' + postRes.status);
-          const post = await postRes.json();
-          return {
-            id,
-            name: post.name || id,
-            description: post.description || '',
-            images: Array.isArray(post.images) ? post.images : [],
-          };
-        } catch (e) {
-          console.warn('Failed to load news post', id, e);
-          return null;
-        }
-      }));
-
-      newsPosts = posts.filter(Boolean);
+      const res = await fetch(SUPABASE_URL + '/rest/v1/news_posts?select=*&published=eq.true&order=created_at.desc', { headers: SUPABASE_HEADERS });
+      newsPosts = res.ok ? (await res.json()).map(p => ({ id: p.slug || p.id, name: p.name, description: p.description, images: p.images || [] })) : [];
       newsLoaded = true;
     } catch (e) {
-      console.error('Failed to load news manifest:', e);
+      console.error('Failed to load news', e);
       newsPosts = [];
       newsLoaded = true;
     }
-
     loadingEl.style.display = 'none';
     renderNews();
-
-    // Deep-link support for ?post=ID
     const params = new URLSearchParams(location.search);
     const postId = params.get('post');
-    if (postId && newsPosts.some(p => p.id === postId)) {
-      openNewsModal(postId, false);
-    }
+    if (postId && newsPosts.some(p => p.id === postId)) openNewsModal(postId, false);
   }
 
   function renderNews() {
@@ -1809,7 +1823,7 @@
 
     newsPosts.forEach(p => {
       const thumb = p.images[0]
-        ? `<img class="news-card-thumb" src="${esc(`${NEWS_BASE_URL}/${encodeURIComponent(p.id)}/${p.images[0]}`)}" alt="" loading="lazy" />`
+        ? `<img class="news-card-thumb" src="${esc(p.images[0])}" alt="" loading="lazy" />`
         : `<div class="news-card-thumb placeholder">&#8499;</div>`;
       const card = document.createElement('div');
       card.className = 'news-card';
@@ -1867,7 +1881,17 @@
   function route(push = false) {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    const serverId = params.get('server');
+    async function route(push = false) {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    let serverId = params.get('server');
+    if (serverId) {
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/vanity_slugs?select=server_id&slug=eq.' + encodeURIComponent(serverId), { headers: SUPABASE_HEADERS });
+        const rows = res.ok ? await res.json() : [];
+        if (rows[0]) serverId = rows[0].server_id;
+      } catch (e) { console.error(e); }
+    }
     const postId = params.get('post');
 
     const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
@@ -2206,12 +2230,30 @@ let liveServersForAdmin = [];
 
 async function loadAdminPanel() {
   renderTmRoleChips();
+  loadAdminRoleDefsList();
+  loadAdminAnalytics();
   loadAdminTeamList();
   loadAdminUsers();
   loadAdminReviews();
   loadAdminChat();
   loadAdminServersAndSlugs();
   loadAdminNews();
+}
+
+async function loadAdminAnalytics() {
+  try {
+    const since = new Date(); since.setHours(0,0,0,0);
+    const rows = await adminRest('player_count_snapshots?select=*&captured_at=gte.' + since.toISOString() + '&order=captured_at.desc');
+    if (!rows.length) { document.getElementById('stat-players-today').textContent = '0'; document.getElementById('stat-most-played').textContent = 'No data yet'; return; }
+    const latest = {};
+    rows.forEach(r => { if (!(r.server_id in latest)) latest[r.server_id] = r; });
+    document.getElementById('stat-players-today').textContent = Object.values(latest).reduce((s, r) => s + r.player_count, 0);
+    const sums = {}, counts = {};
+    rows.forEach(r => { sums[r.server_id] = (sums[r.server_id]||0) + r.player_count; counts[r.server_id] = (counts[r.server_id]||0) + 1; });
+    let topId = null, topAvg = -1;
+    Object.keys(sums).forEach(id => { const avg = sums[id]/counts[id]; if (avg > topAvg) { topAvg = avg; topId = id; } });
+    document.getElementById('stat-most-played').textContent = topId ? `${latest[topId].server_name} (avg ${topAvg.toFixed(1)})` : 'No data yet';
+  } catch (e) { console.error(e); }
 }
 
 async function saveTeamMember() {
@@ -2222,10 +2264,16 @@ async function saveTeamMember() {
   const roles = [...tmSelectedRoles];
   if (!name) return alert('Name is required.');
   try {
-    await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+    if (editingMemberId) {
+      await adminRest('team_members?id=eq.' + editingMemberId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+    } else {
+      await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+    }
+    editingMemberId = null;
     ['tm-name','tm-discord-id','tm-discord-tag'].forEach(id => document.getElementById(id).value = '');
     tmSelectedRoles = [];
     renderTmRoleChips();
+    document.getElementById('tm-create-btn').textContent = 'Save Team Member';
     loadAdminTeamList();
     buildMemberLookup();
   } catch (e) { console.error(e); alert('Could not save team member.'); }
@@ -2240,13 +2288,25 @@ async function loadAdminTeamList() {
   try {
     const rows = await adminRest('team_members?select=*&order=section.asc,sort_order.asc');
     el.innerHTML = rows.map(m => `
-      <div class="member-card">
+      <div class="member-card" style="cursor:pointer;" onclick='editTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)}, ${JSON.stringify(m.discord_id||"")}, ${JSON.stringify(m.discord_tag||"")}, ${JSON.stringify(m.section)}, ${JSON.stringify(m.roles||[])})'>
         <div class="member-roles">${roleTagsHtml(m.roles)}</div>
         <div class="member-name">${esc(m.name)}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">${m.discord_id ? 'Discord linked' : 'No Discord linked'} &middot; ${esc(m.section)}</div>
-        <button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="deleteTeamMember('${m.id}')">Remove</button>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">${m.discord_id ? 'Discord linked' : 'No Discord linked'} &middot; ${esc(m.section)} &middot; click to edit</div>
+        <button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="event.stopPropagation();deleteTeamMember('${m.id}')">Remove</button>
       </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No team members yet.</div>';
   } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load team.</div>'; }
+}
+
+function editTeamMember(id, name, discordId, discordTag, section, roles) {
+  editingMemberId = id;
+  document.getElementById('tm-name').value = name || '';
+  document.getElementById('tm-discord-id').value = discordId || '';
+  document.getElementById('tm-discord-tag').value = discordTag || '';
+  document.getElementById('tm-section').value = section || 'team';
+  tmSelectedRoles = [...(roles || [])];
+  renderTmRoleChips();
+  document.getElementById('tm-create-btn').textContent = 'Update Team Member';
+  document.getElementById('tm-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // USERS — derived from chat_messages + server_reviews since Supabase's public REST API
@@ -2279,45 +2339,58 @@ async function loadAdminUsers() {
   } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users.</div>'; }
 }
 
+let allAdminReviews = [];
+
 async function loadAdminReviews() {
-  const el = document.getElementById('admin-reviews-list');
-  try {
-    const rows = await adminRest('server_reviews?select=*&order=created_at.desc&limit=200');
-    el.innerHTML = rows.map(r => `
-      <div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
-        <div>
-          <div style="font-size:0.82rem;color:#fff;">${esc(r.username)} &middot; ${starsHtml(r.rating, '0.7rem')} &middot; <span style="color:var(--muted);">${esc(r.server_id)}</span></div>
-          ${r.comment ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">${esc(r.comment)}</div>` : ''}
-        </div>
-        <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteReviewAdmin('${r.id}','${esc(r.server_id)}')">Delete</button>
-      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No reviews yet.</div>';
-  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load reviews.</div>'; }
+  try { allAdminReviews = await adminRest('server_reviews?select=*&order=created_at.desc&limit=500'); filterAdminReviews(); }
+  catch (e) { console.error(e); document.getElementById('admin-reviews-list').innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load reviews.</div>'; }
+}
+function filterAdminReviews() {
+  const q = (document.getElementById('reviews-search')?.value || '').trim().toLowerCase();
+  const rows = q ? allAdminReviews.filter(r => (r.username||'').toLowerCase().includes(q) || (r.server_id||'').toLowerCase().includes(q) || (r.comment||'').toLowerCase().includes(q)) : allAdminReviews;
+  document.getElementById('admin-reviews-list').innerHTML = rows.map(r => `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
+      <div>
+        <div style="font-size:0.82rem;color:#fff;">${esc(r.username)} &middot; ${starsHtml(r.rating, '0.7rem')} &middot; <span style="color:var(--muted);">${esc(r.server_id)}</span></div>
+        ${r.comment ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">${esc(r.comment)}</div>` : ''}
+      </div>
+      <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteReviewAdmin('${r.id}','${esc(r.server_id)}')">Delete</button>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No matching reviews.</div>';
 }
 async function deleteReviewAdmin(id, serverId) {
   if (!confirm('Delete this review?')) return;
   try {
     await adminRest('server_reviews?id=eq.' + id, { method: 'DELETE' });
-    loadAdminReviews();
+    allAdminReviews = allAdminReviews.filter(r => r.id !== id);
+    filterAdminReviews();
     const openSection = document.getElementById('reviews-section-' + serverId);
     if (openSection) renderReviewsSection(serverId, 'reviews-section-' + serverId);
   } catch (e) { console.error(e); alert('Could not delete review.'); }
 }
 
+let allAdminChat = [];
+
 async function loadAdminChat() {
-  const el = document.getElementById('admin-chat-list');
-  try {
-    const rows = await adminRest('chat_messages?select=*&order=created_at.desc&limit=100');
-    el.innerHTML = rows.map(m => `
-      <div style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
-        <div style="font-size:0.8rem;"><span style="color:var(--violet);">${esc(m.username)}</span>: ${esc(m.message)}</div>
-        <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteChatAdmin('${m.id}')">Delete</button>
-      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No messages yet.</div>';
-  } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load chat.</div>'; }
+  try { allAdminChat = await adminRest('chat_messages?select=*&order=created_at.desc&limit=500'); filterAdminChat(); }
+  catch (e) { console.error(e); document.getElementById('admin-chat-list').innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load chat.</div>'; }
+}
+function filterAdminChat() {
+  const q = (document.getElementById('chat-search')?.value || '').trim().toLowerCase();
+  const rows = q ? allAdminChat.filter(m => (m.username||'').toLowerCase().includes(q) || (m.message||'').toLowerCase().includes(q)) : allAdminChat;
+  document.getElementById('admin-chat-list').innerHTML = rows.map(m => `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
+      <div style="font-size:0.8rem;"><span style="color:var(--violet);">${esc(m.username)}</span>: ${esc(m.message)}</div>
+      <button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteChatAdmin('${m.id}')">Delete</button>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No matching messages.</div>';
 }
 async function deleteChatAdmin(id) {
   if (!confirm('Delete this message?')) return;
-  try { await adminRest('chat_messages?id=eq.' + id, { method: 'DELETE' }); loadAdminChat(); if (chatOpen) loadChatMessages(); }
-  catch (e) { console.error(e); alert('Could not delete message.'); }
+  try {
+    await adminRest('chat_messages?id=eq.' + id, { method: 'DELETE' });
+    allAdminChat = allAdminChat.filter(m => m.id !== id);
+    filterAdminChat();
+    if (chatOpen) loadChatMessages();
+  } catch (e) { console.error(e); alert('Could not delete message.'); }
 }
 
 async function loadAdminServersAndSlugs() {
@@ -2405,17 +2478,39 @@ async function resetOverrideAdmin() {
   } catch (e) { console.error(e); alert('Could not reset.'); }
 }
 
+async function uploadNewsImages(files) {
+  const urls = [];
+  const status = document.getElementById('news-upload-status');
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  for (const file of files) {
+    status.textContent = `Uploading ${file.name}…`;
+    const path = `news/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public-media/${path}`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, apikey: SUPABASE_ANON_KEY, 'Content-Type': file.type },
+      body: file,
+    });
+    if (!res.ok) throw new Error('Upload failed for ' + file.name);
+    urls.push(`${SUPABASE_URL}/storage/v1/object/public/public-media/${path}`);
+  }
+  status.textContent = '';
+  return urls;
+}
 async function createNewsPost() {
   const name = document.getElementById('news-name').value.trim();
   const description = document.getElementById('news-desc').value.trim();
-  const images = document.getElementById('news-images').value.split(',').map(s => s.trim()).filter(Boolean);
+  const fileInput = document.getElementById('news-image-file');
   if (!name) return alert('Title is required.');
   try {
+    const images = fileInput.files.length ? await uploadNewsImages(fileInput.files) : [];
     await adminRest('news_posts', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images, published: true }) });
-    ['news-name','news-desc','news-images'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('news-name').value = '';
+    document.getElementById('news-desc').value = '';
+    fileInput.value = '';
     loadAdminNews();
     loadNews();
-  } catch (e) { console.error(e); alert('Could not publish post.'); }
+  } catch (e) { console.error(e); alert('Could not publish post: ' + e.message); }
 }
 async function loadAdminNews() {
   const el = document.getElementById('admin-news-list');
@@ -2442,6 +2537,35 @@ async function deleteNewsAdmin(id) {
 }
 
 document.getElementById('tm-role-add-btn')?.addEventListener('click', addTmRole);
+document.getElementById('role-create-btn')?.addEventListener('click', createRoleDef);
+
+async function createRoleDef() {
+  const role_name = document.getElementById('role-name-input').value.trim();
+  const color = document.getElementById('role-color-input').value;
+  if (!role_name) return alert('Role name is required.');
+  try {
+    await adminRest('role_defs', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ role_name, color }) });
+    document.getElementById('role-name-input').value = '';
+    const rows = await adminRest('role_defs?select=*');
+    rolesMap = Object.fromEntries(rows.map(r => [r.role_name, r.color]));
+    loadAdminRoleDefsList();
+    renderTmRoleChips();
+  } catch (e) { console.error(e); alert('Could not save role.'); }
+}
+async function deleteRoleDef(name) {
+  if (!confirm('Delete this role? Anyone whose only role is this one loses admin access.')) return;
+  try {
+    await adminRest('role_defs?role_name=eq.' + encodeURIComponent(name), { method: 'DELETE' });
+    delete rolesMap[name];
+    loadAdminRoleDefsList();
+    renderTmRoleChips();
+  } catch (e) { console.error(e); alert('Could not delete role.'); }
+}
+function loadAdminRoleDefsList() {
+  const names = Object.keys(rolesMap);
+  document.getElementById('role-defs-list').innerHTML = names.length ? names.map(r => `
+    <span class="role-tag" style="border-color:${esc(rolesMap[r])};color:${esc(rolesMap[r])};margin-right:0.4rem;">${esc(r)} <span style="cursor:pointer;margin-left:0.3rem;color:var(--red);" onclick="deleteRoleDef('${esc(r)}')">&times;</span></span>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">No roles yet.</div>';
+}
 document.getElementById('tm-create-btn')?.addEventListener('click', saveTeamMember);
 document.getElementById('slug-create-btn')?.addEventListener('click', addVanitySlug);
 document.getElementById('news-create-btn')?.addEventListener('click', createNewsPost);
