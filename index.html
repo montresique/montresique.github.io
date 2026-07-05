@@ -3920,8 +3920,10 @@
     async function deleteReviewAdmin(id, serverId) {
       if (!confirm('Delete this review?')) return;
       try {
+        const target = allAdminReviews.find(r => r.id === id);
+        const detail = target ? `by ${target.username} on ${serverId}` : 'server: ' + serverId;
         await adminRest('server_reviews?id=eq.' + id, { method: 'DELETE' });
-        await logAdminAction('Deleted review', 'server: ' + serverId);
+        await logAdminAction('Deleted review', detail);
         allAdminReviews = allAdminReviews.filter(r => r.id !== id);
         filterAdminReviews();
         const openSection = document.getElementById('reviews-section-' + serverId);
@@ -3947,8 +3949,10 @@
     async function deleteChatAdmin(id) {
       if (!confirm('Delete this message?')) return;
       try {
+        const target = allAdminChat.find(m => m.id === id);
+        const detail = target ? `from ${target.username}: "${target.message.slice(0, 60)}"` : 'id: ' + id;
         await adminRest('chat_messages?id=eq.' + id, { method: 'DELETE' });
-        await logAdminAction('Deleted chat message', 'id: ' + id);
+        await logAdminAction('Deleted chat message', detail);
         allAdminChat = allAdminChat.filter(m => m.id !== id);
         filterAdminChat();
         if (chatOpen) loadChatMessages();
@@ -4118,8 +4122,10 @@
     }
     async function toggleNewsAdmin(id, published) {
       try {
+        const target = allAdminNews.find(p => p.id === id);
+        const detail = target ? target.name : 'id: ' + id;
         await adminRest('news_posts?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ published: !published }) });
-        await logAdminAction(published ? 'Unpublished news post' : 'Published news post', 'id: ' + id);
+        await logAdminAction(published ? 'Unpublished news post' : 'Published news post', detail);
         loadAdminNews(); loadNews();
       }
       catch (e) { console.error(e); alert('Could not update post.'); }
@@ -4127,8 +4133,10 @@
     async function deleteNewsAdmin(id) {
       if (!confirm('Delete this post?')) return;
       try {
+        const target = allAdminNews.find(p => p.id === id);
+        const detail = target ? target.name : 'id: ' + id;
         await adminRest('news_posts?id=eq.' + id, { method: 'DELETE' });
-        await logAdminAction('Deleted news post', 'id: ' + id);
+        await logAdminAction('Deleted news post', detail);
         if (editingNewsId === id) cancelNewsEdit();
         loadAdminNews(); loadNews();
       }
