@@ -2315,6 +2315,7 @@
     let editingMemberId = null;
     let overridesMap = {};
     let lastActiveTab = 'home';
+    let analyticsRangeRefreshInterval = null;
 
     // Montresique member lookup — built once siteData loads, used to badge players in the list.
     // Matches on `name`, since MultiCraft in-game usernames are stored directly as `name` in data.json.
@@ -2462,6 +2463,10 @@
     }
 
     function closeAdminPanel() {
+      if (analyticsRangeRefreshInterval) {
+        clearInterval(analyticsRangeRefreshInterval);
+        analyticsRangeRefreshInterval = null;
+      }
       showPage(lastActiveTab, true);
     }
 
@@ -3656,6 +3661,10 @@
       renderTmRoleChips();
       loadAdminAnalytics();
       updateAnalyticsRangeAvailability();
+
+      if (analyticsRangeRefreshInterval) clearInterval(analyticsRangeRefreshInterval);
+      analyticsRangeRefreshInterval = setInterval(updateAnalyticsRangeAvailability, 5000);
+
       const tasks = [
         ['role defs', loadAdminRoleDefsList],
         ['analytics', loadAdminAnalytics],
