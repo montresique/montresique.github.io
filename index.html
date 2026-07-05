@@ -3654,6 +3654,7 @@
 
     async function loadAdminPanel() {
       renderTmRoleChips();
+      loadAdminAnalytics(); // fire immediately so stats populate right away
       const tasks = [
         ['role defs', loadAdminRoleDefsList],
         ['analytics', loadAdminAnalytics],
@@ -3667,9 +3668,6 @@
       const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
       results.forEach((r, i) => { if (r.status === 'rejected') console.error('Admin panel section failed to load:', tasks[i][0], r.reason); });
 
-      // If servers hadn't loaded yet when we first populated the dropdowns, retry
-      // once loadServers() finishes populating allServersFull, so the overrides/
-      // servers dropdown doesn't stay stuck empty.
       if (!allServersFull.length && !allServers.length) {
         setTimeout(() => { if (isAdmin) loadAdminServersAndSlugs().catch(e => console.error(e)); }, 3000);
       }
@@ -3704,14 +3702,18 @@
       const liveTotal = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
       document.getElementById('stat-players-today').textContent = liveTotal;
 
+      const mostPlayedEl = document.getElementById('stat-most-played');
+      mostPlayedEl.textContent = 'Loading…';
+
       try {
         const since = analyticsRangeSince();
         const rows = await adminRest('player_count_snapshots?select=*&captured_at=gte.' + since.toISOString() + '&order=captured_at.desc');
-        console.log('[analytics] snapshot rows for range:', rows.length, rows);
-        if (!rows.length) {
-          document.getElementById('stat-most-played').textContent = 'No data yet';
+
+        if (!rows || !rows.length) {
+          mostPlayedEl.textContent = 'No data yet';
           return;
         }
+
         const sums = {}, counts = {}, latest = {};
         rows.forEach(r => {
           if (!(r.server_id in latest)) latest[r.server_id] = r;
@@ -3723,10 +3725,10 @@
           const avg = sums[id] / counts[id];
           if (avg > topAvg) { topAvg = avg; topId = id; }
         });
-        document.getElementById('stat-most-played').textContent = topId ? latest[topId].server_name : 'No data yet';
+        mostPlayedEl.textContent = topId ? latest[topId].server_name : 'No data yet';
       } catch (e) {
         console.error('[analytics] failed:', e);
-        document.getElementById('stat-most-played').textContent = 'Error';
+        mostPlayedEl.textContent = 'No data yet';
       }
     }
     async function saveTeamMember() {
