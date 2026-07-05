@@ -3654,7 +3654,8 @@
 
     async function loadAdminPanel() {
       renderTmRoleChips();
-      loadAdminAnalytics(); // fire immediately so stats populate right away
+      loadAdminAnalytics();
+      updateAnalyticsRangeAvailability();
       const tasks = [
         ['role defs', loadAdminRoleDefsList],
         ['analytics', loadAdminAnalytics],
@@ -3729,6 +3730,39 @@
       } catch (e) {
         console.error('[analytics] failed:', e);
         mostPlayedEl.textContent = 'No data yet';
+      }
+    }
+
+    async function updateAnalyticsRangeAvailability() {
+      const select = document.getElementById('analytics-range-select');
+      if (!select) return;
+
+      let earliest = null;
+      try {
+        const rows = await adminRest('player_count_snapshots?select=captured_at&order=captured_at.asc&limit=1');
+        if (rows && rows.length) earliest = new Date(rows[0].captured_at);
+      } catch (e) {
+        console.error('[analytics] could not check earliest snapshot:', e);
+      }
+
+      const now = new Date();
+      const daysOfHistory = earliest ? (now - earliest) / (1000 * 60 * 60 * 24) : 0;
+
+      const requirements = { today: 0, day: 1, week: 7, month: 30 };
+      const currentValue = select.value;
+      let currentStillValid = true;
+
+      Array.from(select.options).forEach(opt => {
+        const needed = requirements[opt.value] ?? 0;
+        const available = daysOfHistory >= needed;
+        opt.disabled = !available;
+        opt.textContent = opt.textContent.replace(' (no data yet)', '') + (available ? '' : ' (no data yet)');
+        if (opt.value === currentValue && !available) currentStillValid = false;
+      });
+
+      if (!currentStillValid) {
+        select.value = 'today';
+        loadAdminAnalytics();
       }
     }
     async function saveTeamMember() {
