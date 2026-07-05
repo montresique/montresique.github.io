@@ -3819,8 +3819,10 @@
       try {
         if (editingMemberId) {
           await adminRest('team_members?id=eq.' + editingMemberId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+          await logAdminAction('Updated team member', name);
         } else {
           await adminRest('team_members', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ name, discord_id, discord_tag, section, roles }) });
+          await logAdminAction('Added team member', name);
         }
         editingMemberId = null;
         ['tm-name', 'tm-discord-id', 'tm-discord-tag'].forEach(id => document.getElementById(id).value = '');
@@ -3834,7 +3836,11 @@
     }
     async function deleteTeamMember(id, name) {
       if (!confirm('Remove this team member? This also revokes any admin access their roles granted.')) return;
-      try { await adminRest('team_members?id=eq.' + id, { method: 'DELETE' }); loadAdminTeamList(); }
+      try {
+        await adminRest('team_members?id=eq.' + id, { method: 'DELETE' });
+        await logAdminAction('Removed team member', name);
+        loadAdminTeamList();
+      }
       catch (e) { console.error(e); alert('Could not remove member.'); }
     }
     async function loadAdminTeamList() {
@@ -3915,6 +3921,7 @@
       if (!confirm('Delete this review?')) return;
       try {
         await adminRest('server_reviews?id=eq.' + id, { method: 'DELETE' });
+        await logAdminAction('Deleted review', 'server: ' + serverId);
         allAdminReviews = allAdminReviews.filter(r => r.id !== id);
         filterAdminReviews();
         const openSection = document.getElementById('reviews-section-' + serverId);
@@ -3941,6 +3948,7 @@
       if (!confirm('Delete this message?')) return;
       try {
         await adminRest('chat_messages?id=eq.' + id, { method: 'DELETE' });
+        await logAdminAction('Deleted chat message', 'id: ' + id);
         allAdminChat = allAdminChat.filter(m => m.id !== id);
         filterAdminChat();
         if (chatOpen) loadChatMessages();
@@ -3989,6 +3997,7 @@
       };
       try {
         await adminRest('server_overrides?on_conflict=server_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(body) });
+        await logAdminAction('Saved server override', 'server: ' + id);
         alert('Saved. Reloading server list.');
         loadServers();
       } catch (e) { console.error(e); alert('Could not save override.'); }
@@ -3998,6 +4007,7 @@
       if (!confirm('Reset this server to live data?')) return;
       try {
         await adminRest('server_overrides?server_id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+        await logAdminAction('Reset server override', 'server: ' + id);
         document.getElementById('override-server-select').dispatchEvent(new Event('change'));
         loadServers();
       } catch (e) { console.error(e); alert('Could not reset.'); }
@@ -4052,8 +4062,10 @@
         const images = [...editingNewsImages, ...newlyUploaded];
         if (editingNewsId) {
           await adminRest('news_posts?id=eq.' + editingNewsId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images }) });
+          await logAdminAction('Updated news post', name);
         } else {
           await adminRest('news_posts', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, description, images, published: true }) });
+          await logAdminAction('Created news post', name);
         }
         cancelNewsEdit();
         loadAdminNews();
@@ -4105,13 +4117,18 @@
       } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load news.</div>'; }
     }
     async function toggleNewsAdmin(id, published) {
-      try { await adminRest('news_posts?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ published: !published }) }); loadAdminNews(); loadNews(); }
+      try {
+        await adminRest('news_posts?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ published: !published }) });
+        await logAdminAction(published ? 'Unpublished news post' : 'Published news post', 'id: ' + id);
+        loadAdminNews(); loadNews();
+      }
       catch (e) { console.error(e); alert('Could not update post.'); }
     }
     async function deleteNewsAdmin(id) {
       if (!confirm('Delete this post?')) return;
       try {
         await adminRest('news_posts?id=eq.' + id, { method: 'DELETE' });
+        await logAdminAction('Deleted news post', 'id: ' + id);
         if (editingNewsId === id) cancelNewsEdit();
         loadAdminNews(); loadNews();
       }
@@ -4127,6 +4144,7 @@
       if (!role_name) return alert('Role name is required.');
       try {
         await adminRest('role_defs', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ role_name, color }) });
+        await logAdminAction('Created/updated role', role_name);
         document.getElementById('role-name-input').value = '';
         const rows = await adminRest('role_defs?select=*');
         rolesMap = Object.fromEntries(rows.map(r => [r.role_name, r.color]));
@@ -4138,6 +4156,7 @@
       if (!confirm('Delete this role? Anyone whose only role is this one loses admin access.')) return;
       try {
         await adminRest('role_defs?role_name=eq.' + encodeURIComponent(name), { method: 'DELETE' });
+        await logAdminAction('Deleted role', name);
         delete rolesMap[name];
         loadAdminRoleDefsList();
         renderTmRoleChips();
