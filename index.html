@@ -3701,28 +3701,31 @@
     }
 
     async function loadAdminAnalytics() {
-      // Live combined player count, straight from the currently loaded server list — no snapshot needed.
       const liveTotal = allServersFull.reduce((s, srv) => s + (srv.connected_players || 0), 0);
       document.getElementById('stat-players-today').textContent = liveTotal;
 
-      // "Most played" uses snapshots over the selected range (day/week/month).
       try {
         const since = analyticsRangeSince();
         const rows = await adminRest('player_count_snapshots?select=*&captured_at=gte.' + since.toISOString() + '&order=captured_at.desc');
+        console.log('[analytics] snapshot rows for range:', rows.length, rows);
         if (!rows.length) {
           document.getElementById('stat-most-played').textContent = 'No data yet';
           return;
         }
-        const latest = {};
-        rows.forEach(r => { if (!(r.server_id in latest)) latest[r.server_id] = r; });
-        const sums = {}, counts = {};
-        rows.forEach(r => { sums[r.server_id] = (sums[r.server_id] || 0) + r.player_count; counts[r.server_id] = (counts[r.server_id] || 0) + 1; });
+        const sums = {}, counts = {}, latest = {};
+        rows.forEach(r => {
+          if (!(r.server_id in latest)) latest[r.server_id] = r;
+          sums[r.server_id] = (sums[r.server_id] || 0) + r.player_count;
+          counts[r.server_id] = (counts[r.server_id] || 0) + 1;
+        });
         let topId = null, topAvg = -1;
-        Object.keys(sums).forEach(id => { const avg = sums[id] / counts[id]; if (avg > topAvg) { topAvg = avg; topId = id; } });
-        document.getElementById('stat-most-played').textContent =
-        topId ? latest[topId].server_name : 'No data yet';
+        Object.keys(sums).forEach(id => {
+          const avg = sums[id] / counts[id];
+          if (avg > topAvg) { topAvg = avg; topId = id; }
+        });
+        document.getElementById('stat-most-played').textContent = topId ? latest[topId].server_name : 'No data yet';
       } catch (e) {
-        console.error(e);
+        console.error('[analytics] failed:', e);
         document.getElementById('stat-most-played').textContent = 'Error';
       }
     }
