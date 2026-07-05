@@ -3314,9 +3314,9 @@
       const serverId = params.get('server');
       const postId = params.get('post');
 
-      const targetTab = VALID_TABS.includes(tab) ? tab : 'home';
+      let targetTab = VALID_TABS.includes(tab) ? tab : 'home';
       if (targetTab === 'admin' && !isAdmin) targetTab = 'home';
-      showPage(targetTab, false); // never push here; we're reading the URL, not writing it
+      showPage(targetTab, false);
 
       if (serverId) {
         const pool = [...allServers, ...allServersFull];
