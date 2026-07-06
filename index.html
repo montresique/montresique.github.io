@@ -2420,6 +2420,7 @@
       loadServers();
       loadNews();
 
+      if (refreshTimer) clearInterval(refreshTimer); // guard against stacking intervals if init() ever runs twice
       refreshTimer = setInterval(loadServers, REFRESH_MS);
     }
 
@@ -2671,8 +2672,21 @@
     // parallel and re-renders once done (silently skips ones already cached).
     const playersFetchInFlight = new Set();
 
+    // How long a failed prefetch is considered "settled" before we allow another
+    // retry for that server. Without this, a server whose players endpoint keeps
+    // failing would never get cached, so every renderList() call would re-trigger
+    // ensurePlayersCachedFor() -> fetch -> fail -> renderList() in an unbroken loop,
+    // pinning the main thread and freezing the tab.
+    const PLAYERS_FAIL_RETRY_MS = 30000;
+
     async function ensurePlayersCachedFor(list, scope) {
-      const toFetch = list.filter(s => !playersCache[s.server_id] && !playersFetchInFlight.has(s.server_id));
+      const toFetch = list.filter(s => {
+        const cached = playersCache[s.server_id];
+        if (playersFetchInFlight.has(s.server_id)) return false;
+        if (!cached) return true;
+        if (cached.errored && Date.now() - cached.ts > PLAYERS_FAIL_RETRY_MS) return true;
+        return false;
+      });
       if (toFetch.length === 0) return;
 
       toFetch.forEach(s => playersFetchInFlight.add(s.server_id));
@@ -2685,11 +2699,20 @@
           const data = await res.json();
           const players = extractPlayersList(data);
           if (players) {
-            playersCache[s.server_id] = { players, ts: Date.now() };
+            playersCache[s.server_id] = { players, ts: Date.now(), errored: false };
             gotAny = true;
+          } else {
+            // Response came back but wasn't a recognizable player list — cache as
+            // errored so we don't refetch this server on every single render.
+            playersCache[s.server_id] = { players: [], ts: Date.now(), errored: true };
           }
         } catch (e) {
           console.warn('Could not prefetch players for filter on', s.server_id, e);
+          // Cache the failure itself. This is the critical fix: previously a failed
+          // fetch left playersCache[s.server_id] unset, so applyFilters() -> renderList()
+          // -> ensurePlayersCachedFor() would retry it again immediately on the very
+          // next render, forever, for any server whose players endpoint errors out.
+          playersCache[s.server_id] = { players: [], ts: Date.now(), errored: true };
         } finally {
           playersFetchInFlight.delete(s.server_id);
         }
