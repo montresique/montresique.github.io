@@ -2347,6 +2347,7 @@
     let newsPosts = [];     // [{ id, name, description, images }]
     let newsLoaded = false;
     let isAdmin = false;
+    let isLeadership = false; // true only if the logged-in admin's team_members.section === 'leadership'
     let editingMemberId = null;
     let overridesMap = {};
     let lastActiveTab = 'home';
@@ -2642,12 +2643,14 @@
 
     async function refreshAdminStatus() {
       isAdmin = false;
+      isLeadership = false;
       document.getElementById('nav-admin').style.display = 'none';
       if (!discordUser?.id) return;
       try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/team_members?select=roles&discord_id=eq.' + encodeURIComponent(discordUser.id), { headers: SUPABASE_HEADERS });
+        const res = await fetch(SUPABASE_URL + '/rest/v1/team_members?select=roles,section&discord_id=eq.' + encodeURIComponent(discordUser.id), { headers: SUPABASE_HEADERS });
         const rows = res.ok ? await res.json() : [];
         isAdmin = !!rows[0] && (rows[0].roles || []).length > 0;
+        isLeadership = isAdmin && rows[0].section === 'leadership';
       } catch (e) { console.error(e); }
       document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
       if (isAdmin) loadAdminPanel();
@@ -3474,6 +3477,41 @@
       updateChatAuthState();
       refreshAdminStatus();
       if (chatOpen) loadChatMessages();
+      if (discordUser) recordSiteLogin(discordUser); // fires every time a logged-in session is detected (login, refresh, tab reload)
+    }
+
+    // Upserts a row recording that this Discord user has logged in, so the admin
+    // Users tab can show *everyone* who's ever authenticated — not just people who
+    // happened to send a chat message or leave a review (Supabase's public REST API
+    // doesn't expose the full auth.users list, so this is our own tracking table).
+    // No dedup guard: this is intentionally called every time a logged-in session is
+    // detected (page load, refresh, login), so last_login_at always stays current and
+    // no login is ever missed. The upsert (on_conflict=discord_user_id) makes repeat
+    // calls for the same user cheap and safe — it just refreshes their row.
+    async function recordSiteLogin(user) {
+      if (!user?.id) return;
+      try {
+        // IMPORTANT: must use authenticated headers (with the user's Bearer token),
+        // not the plain anon SUPABASE_HEADERS — the RLS policy checks auth.jwt(),
+        // which is empty on an unauthenticated request, silently rejecting the insert.
+        const headers = await sbAuthedHeaders();
+        const res = await fetch(SUPABASE_URL + '/rest/v1/site_logins?on_conflict=discord_user_id', {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=minimal' }),
+          body: JSON.stringify({
+            discord_user_id: user.id,
+            username: getDiscordDisplayName(user),
+            avatar_url: getDiscordAvatarUrl(user),
+            last_login_at: new Date().toISOString(),
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          console.error('recordSiteLogin failed:', res.status, body);
+        }
+      } catch (e) {
+        console.error('Could not record site login (check site_logins table/policies):', e);
+      }
     }
 
     async function initDiscordAuth() {
@@ -3729,15 +3767,31 @@
       try {
         const rows = await adminRest('audit_log?select=*&order=created_at.desc&limit=200');
         el.innerHTML = (rows || []).map(r => `
-          <div style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;">
-            <span style="color:var(--violet);">${esc(r.username || 'Unknown')}</span>
-            <span style="color:var(--text);"> ${esc(r.action)}</span>
-            ${r.details ? `<span style="color:var(--muted);"> &middot; ${esc(r.details)}</span>` : ''}
-            <span style="color:var(--muted);float:right;">${new Date(r.created_at).toLocaleString()}</span>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;">
+            <span>
+              <span style="color:var(--violet);">${esc(r.username || 'Unknown')}</span>
+              <span style="color:var(--text);"> ${esc(r.action)}</span>
+              ${r.details ? `<span style="color:var(--muted);"> &middot; ${esc(r.details)}</span>` : ''}
+              <span style="color:var(--muted);"> &middot; ${new Date(r.created_at).toLocaleString()}</span>
+            </span>
+            ${isLeadership ? `<button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);flex-shrink:0;" onclick="deleteAuditLogEntry('${r.id}')">Delete</button>` : ''}
           </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No actions logged yet.</div>';
       } catch (e) {
         console.error(e);
         el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load audit log. Make sure the audit_log table and its RLS policies exist in Supabase.</div>';
+      }
+    }
+
+    // Leadership-only: remove a single audit log entry.
+    async function deleteAuditLogEntry(id) {
+      if (!isLeadership) return alert('Only Leadership can delete audit log entries.');
+      if (!confirm('Delete this audit log entry? This cannot be undone.')) return;
+      try {
+        await adminRest('audit_log?id=eq.' + id, { method: 'DELETE' });
+        loadAdminAuditLog();
+      } catch (e) {
+        console.error(e);
+        alert('Could not delete audit log entry.');
       }
     }
 
@@ -3833,6 +3887,7 @@
       }
     }
     async function saveTeamMember() {
+      if (!isLeadership) return alert('Only Leadership can add or edit team members.');
       const name = document.getElementById('tm-name').value.trim();
       const discord_id = document.getElementById('tm-discord-id').value.trim() || null;
       const discord_tag = document.getElementById('tm-discord-tag').value.trim() || null;
@@ -3858,6 +3913,7 @@
       } catch (e) { console.error(e); alert('Could not save team member.'); }
     }
     async function deleteTeamMember(id, name) {
+      if (!isLeadership) return alert('Only Leadership can remove team members.');
       if (!confirm('Remove this team member? This also revokes any admin access their roles granted.')) return;
       try {
         await adminRest('team_members?id=eq.' + id, { method: 'DELETE' });
@@ -3875,7 +3931,7 @@
         <div class="member-roles">${roleTagsHtml(m.roles)}</div>
         <div class="member-name">${esc(m.name)}</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">${m.discord_id ? 'Discord linked' : 'No Discord linked'} &middot; ${esc(m.section)} &middot; click to edit</div>
-        <button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick='event.stopPropagation();deleteTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)})'>Remove</button>
+        ${isLeadership ? `<button class="players-btn" style="margin-top:0.5rem;border-color:rgba(255,68,102,0.4);color:var(--red);" onclick='event.stopPropagation();deleteTeamMember(${JSON.stringify(m.id)}, ${JSON.stringify(m.name)})'>Remove</button>` : ''}
       </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No team members yet.</div>';
       } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load team.</div>'; }
     }
@@ -3892,34 +3948,28 @@
       document.getElementById('tm-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // USERS — derived from chat_messages + server_reviews since Supabase's public REST API
-    // doesn't expose the full auth.users list; this shows everyone who has actually interacted.
+    // USERS — pulled purely from site_logins (every Discord login, recorded by
+    // recordSiteLogin() every time a logged-in session is detected). This is now
+    // the single source of truth, since Supabase's public REST API doesn't expose
+    // the full auth.users list otherwise.
     async function loadAdminUsers() {
       const el = document.getElementById('admin-users-list');
       try {
-        const [chats, reviews, team] = await Promise.all([
-          adminRest('chat_messages?select=discord_user_id,username,avatar_url,created_at&order=created_at.desc&limit=500'),
-          adminRest('server_reviews?select=discord_user_id,username,avatar_url,created_at&order=created_at.desc&limit=500'),
+        const [logins, team] = await Promise.all([
+          adminRest('site_logins?select=discord_user_id,username,avatar_url,last_login_at&order=last_login_at.desc&limit=1000'),
           adminRest('team_members?select=discord_id,name,roles'),
         ]);
-        const byId = {};
-        [...chats, ...reviews].forEach(r => {
-          if (!r.discord_user_id) return;
-          if (!byId[r.discord_user_id] || new Date(r.created_at) > new Date(byId[r.discord_user_id].last_seen)) {
-            byId[r.discord_user_id] = { discord_user_id: r.discord_user_id, username: r.username, avatar_url: r.avatar_url, last_seen: r.created_at };
-          }
-        });
-        const teamById = Object.fromEntries(team.filter(t => t.discord_id).map(t => [t.discord_id, t]));
-        const rows = Object.values(byId).sort((a, b) => new Date(b.last_seen) - new Date(a.last_seen));
+        const teamById = Object.fromEntries((team || []).filter(t => t.discord_id).map(t => [t.discord_id, t]));
+        const rows = logins || [];
         el.innerHTML = rows.length ? `<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
       <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:0.4rem;">User</th><th style="padding:0.4rem;">Discord ID</th><th style="padding:0.4rem;">Team roles</th><th style="padding:0.4rem;">Last seen</th></tr></thead>
       <tbody>${rows.map(u => `<tr style="border-top:1px solid var(--border);">
         <td style="padding:0.4rem;">${esc(u.username || 'Unknown')}</td>
         <td style="padding:0.4rem;color:var(--muted);">${esc(u.discord_user_id)}</td>
         <td style="padding:0.4rem;">${teamById[u.discord_user_id] ? roleTagsHtml(teamById[u.discord_user_id].roles) : '<span style="color:var(--muted);">not on team</span>'}</td>
-        <td style="padding:0.4rem;color:var(--muted);">${new Date(u.last_seen).toLocaleDateString()}</td>
-      </tr>`).join('')}</tbody></table>` : '<div style="color:var(--muted);font-size:0.8rem;">No user activity yet.</div>';
-      } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users.</div>'; }
+        <td style="padding:0.4rem;color:var(--muted);">${new Date(u.last_login_at).toLocaleDateString()}</td>
+      </tr>`).join('')}</tbody></table>` : '<div style="color:var(--muted);font-size:0.8rem;">No logins recorded yet.</div>';
+      } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users. Make sure the site_logins table and its RLS policies exist in Supabase.</div>'; }
     }
 
     let allAdminReviews = [];
@@ -3972,11 +4022,25 @@
     async function deleteChatAdmin(id) {
       if (!confirm('Delete this message?')) return;
       try {
-        const target = allAdminChat.find(m => m.id === id);
-        const detail = target ? `from ${target.username}: "${target.message.slice(0, 60)}"` : 'id: ' + id;
+        // The delete button appears both in the Admin Panel's Chat Moderation tab
+        // (backed by allAdminChat) and in the floating chat widget itself (backed by
+        // chatMessages) — check both, and if neither has it cached, fetch the row
+        // directly so the audit log always gets real content instead of falling
+        // back to a bare id.
+        let target = allAdminChat.find(m => m.id === id) || chatMessages.find(m => m.id === id);
+        if (!target) {
+          try {
+            const rows = await adminRest('chat_messages?select=username,message&id=eq.' + encodeURIComponent(id));
+            target = rows && rows[0];
+          } catch (fetchErr) {
+            console.warn('Could not fetch chat message details before delete:', fetchErr);
+          }
+        }
+        const detail = target ? `from ${target.username}: "${String(target.message).slice(0, 60)}"` : 'id: ' + id;
         await adminRest('chat_messages?id=eq.' + id, { method: 'DELETE' });
         await logAdminAction('Deleted chat message', detail);
         allAdminChat = allAdminChat.filter(m => m.id !== id);
+        chatMessages = chatMessages.filter(m => m.id !== id);
         filterAdminChat();
         if (chatOpen) loadChatMessages();
       } catch (e) { console.error(e); alert('Could not delete message.'); }
