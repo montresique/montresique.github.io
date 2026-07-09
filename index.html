@@ -3948,28 +3948,28 @@
       document.getElementById('tm-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // USERS — pulled purely from site_logins (every Discord login, recorded by
+    // USERS — pulled purely from admin_known_users (every Discord login, recorded by
     // recordSiteLogin() every time a logged-in session is detected). This is now
     // the single source of truth, since Supabase's public REST API doesn't expose
     // the full auth.users list otherwise.
     async function loadAdminUsers() {
       const el = document.getElementById('admin-users-list');
       try {
-        const [logins, team] = await Promise.all([
-          adminRest('site_logins?select=discord_user_id,username,avatar_url,last_login_at&order=last_login_at.desc&limit=1000'),
+        const [users, team] = await Promise.all([
+          adminRest('admin_known_users?select=*&order=last_seen.desc&limit=1000'),
           adminRest('team_members?select=discord_id,name,roles'),
         ]);
         const teamById = Object.fromEntries((team || []).filter(t => t.discord_id).map(t => [t.discord_id, t]));
-        const rows = logins || [];
+        const rows = users || [];
         el.innerHTML = rows.length ? `<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
-      <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:0.4rem;">User</th><th style="padding:0.4rem;">Discord ID</th><th style="padding:0.4rem;">Team roles</th><th style="padding:0.4rem;">Last seen</th></tr></thead>
-      <tbody>${rows.map(u => `<tr style="border-top:1px solid var(--border);">
-        <td style="padding:0.4rem;">${esc(u.username || 'Unknown')}</td>
-        <td style="padding:0.4rem;color:var(--muted);">${esc(u.discord_user_id)}</td>
-        <td style="padding:0.4rem;">${teamById[u.discord_user_id] ? roleTagsHtml(teamById[u.discord_user_id].roles) : '<span style="color:var(--muted);">not on team</span>'}</td>
-        <td style="padding:0.4rem;color:var(--muted);">${new Date(u.last_login_at).toLocaleDateString()}</td>
-      </tr>`).join('')}</tbody></table>` : '<div style="color:var(--muted);font-size:0.8rem;">No logins recorded yet.</div>';
-      } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users. Make sure the site_logins table and its RLS policies exist in Supabase.</div>'; }
+          <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:0.4rem;">User</th><th style="padding:0.4rem;">Discord ID</th><th style="padding:0.4rem;">Team roles</th><th style="padding:0.4rem;">Last seen</th></tr></thead>
+          <tbody>${rows.map(u => `<tr style="border-top:1px solid var(--border);">
+            <td style="padding:0.4rem;">${esc(u.username || 'Unknown')}</td>
+            <td style="padding:0.4rem;color:var(--muted);">${esc(u.discord_user_id)}</td>
+            <td style="padding:0.4rem;">${teamById[u.discord_user_id] ? roleTagsHtml(teamById[u.discord_user_id].roles) : '<span style="color:var(--muted);">not on team</span>'}</td>
+            <td style="padding:0.4rem;color:var(--muted);">${new Date(u.last_seen).toLocaleDateString()}</td>
+          </tr>`).join('')}</tbody></table>` : '<div style="color:var(--muted);font-size:0.8rem;">No users found yet.</div>';
+      } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users. Make sure the admin_known_users view exists in Supabase.</div>'; }
     }
 
     let allAdminReviews = [];
