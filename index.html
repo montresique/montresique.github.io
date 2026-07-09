@@ -10,26 +10,36 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Montresique" />
-  <meta property="og:description"
+  <meta property="og:title" id="meta-og-title" content="Montresique" />
+  <meta property="og:description" id="meta-og-description"
     content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
-  <meta property="og:image" content="assets/logo.png" />
-  <meta property="og:url" content="https://montresique.github.io/" />
+  <meta property="og:image" id="meta-og-image" content="assets/logo.png" />
+  <meta property="og:url" id="meta-og-url" content="https://montresique.github.io/" />
   <meta property="og:site_name" content="Montresique" />
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Montresique" />
-  <meta name="twitter:description"
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" id="meta-twitter-title" content="Montresique" />
+  <meta name="twitter:description" id="meta-twitter-description"
     content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
-  <meta name="twitter:image" content="assets/logo.png" />
-  <title>Montresique [&#8499;]</title>
+  <meta name="twitter:image" id="meta-twitter-image" content="assets/logo.png" />
+  <title id="page-title">Montresique [&#8499;]</title>
   <style>
     @font-face {
       font-family: 'MultiCraftFont';
       src: url('MultiCraftFont.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
+    }
+
+    /* Available site-wide, but only opted into by specific elements (e.g. news
+       descriptions) — the site's base font stays MultiCraftFont everywhere else. */
+    @font-face {
+      font-family: 'JetBrainsMonoNerd';
+      src: url('https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@master/patched-fonts/JetBrainsMono/Ligatures/Regular/JetBrainsMonoNerdFontMono-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
     }
 
     *,
@@ -906,6 +916,8 @@
     }
 
     .news-card-desc {
+      font-family: 'JetBrainsMonoNerd', 'MultiCraftFont', monospace;
+      font-weight: normal;
       font-size: 0.8rem;
       color: var(--muted);
       line-height: 1.6;
@@ -916,11 +928,20 @@
     }
 
     .news-modal-desc {
+      font-family: 'JetBrainsMonoNerd', 'MultiCraftFont', monospace;
+      font-weight: normal;
       font-size: 0.87rem;
       color: var(--text);
       line-height: 1.85;
       white-space: pre-line;
       margin-bottom: 1.2rem;
+    }
+
+    .news-modal-desc a,
+    .news-card-desc a {
+      color: var(--cyan);
+      text-decoration: underline;
+      word-break: break-word;
     }
 
     .news-modal-images {
@@ -3267,6 +3288,42 @@
 
     // ═══════════════════════ NEWS ═══════════════════════
 
+    // ── Dynamic Open Graph / Twitter meta tags for news posts ──
+    // Note: these updates only affect the live DOM, which helps when a *user's
+    // own browser* re-shares a link or shows a rich preview client-side. Crawlers
+    // for Discord/Twitter/etc. fetch the raw HTML without running JS, so they will
+    // still see the default tags below for a first-time crawl of a post link.
+    // Getting crawler-visible per-post previews requires server-side rendering
+    // (e.g. an edge function), which is a separate, bigger change from this file.
+    const DEFAULT_META = {
+      title: 'Montresique [\u2133]',
+      ogTitle: 'Montresique',
+      description: "An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features.",
+      image: new URL('assets/logo.png', location.href).href,
+      url: location.origin + location.pathname,
+    };
+
+    function setMetaTags({ title, description, image, url }) {
+      document.title = title || DEFAULT_META.title;
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.setAttribute('content', val); };
+      set('meta-og-title', title || DEFAULT_META.ogTitle);
+      set('meta-og-description', description || DEFAULT_META.description);
+      set('meta-og-image', image || DEFAULT_META.image);
+      set('meta-og-url', url || DEFAULT_META.url);
+      set('meta-twitter-title', title || DEFAULT_META.ogTitle);
+      set('meta-twitter-description', description || DEFAULT_META.description);
+      set('meta-twitter-image', image || DEFAULT_META.image);
+    }
+
+    function resetMetaTags() {
+      setMetaTags({
+        title: DEFAULT_META.title,
+        description: DEFAULT_META.description,
+        image: DEFAULT_META.image,
+        url: DEFAULT_META.url,
+      });
+    }
+
     async function loadNews() {
       const loadingEl = document.getElementById('news-loading');
       const emptyEl = document.getElementById('news-empty');
@@ -3307,7 +3364,7 @@
         <div class="news-card-body">
           <div class="news-card-title">${esc(p.name)}</div>
           ${dateStr ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">${esc(dateStr)}</div>` : ''}
-          <div class="news-card-desc">${esc(p.description)}</div>
+          <div class="news-card-desc">${linkify(p.description)}</div>
         </div>
       `;
         gridEl.appendChild(card);
@@ -3328,9 +3385,16 @@
       <div class="modal-title">${esc(p.name)}</div>
       ${dateStr ? `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">${esc(dateStr)}</div>` : ''}
       ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
-      <div class="news-modal-desc">${esc(p.description)}</div>
+      <div class="news-modal-desc">${linkify(p.description)}</div>
     `;
       document.getElementById('news-modal').classList.add('open');
+
+      setMetaTags({
+        title: p.name + ' — Montresique News',
+        description: (p.description || '').slice(0, 200),
+        image: p.images[0] || null,
+        url: location.origin + location.pathname + '?tab=news&post=' + encodeURIComponent(postId),
+      });
 
       if (push) {
         const params = new URLSearchParams(location.search);
@@ -3341,6 +3405,7 @@
     }
     function closeNewsModal(push = true) {
       document.getElementById('news-modal').classList.remove('open');
+      resetMetaTags();
       if (push) {
         const params = new URLSearchParams(location.search);
         params.delete('post');
@@ -3352,6 +3417,24 @@
 
     function esc(str) {
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Escapes text (so no HTML injection is possible), then wraps bare URLs
+    // (http://, https://, www.) in clickable <a> tags that open in a new tab.
+    // onclick="event.stopPropagation()" keeps links inside clickable news cards
+    // from also triggering the card's "open modal" click handler.
+    function linkify(str) {
+      const escaped = esc(str);
+      return escaped.replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi, (match) => {
+        let trail = '';
+        const trailMatch = match.match(/[).,;:!?\]]+$/);
+        if (trailMatch) {
+          trail = trailMatch[0];
+          match = match.slice(0, match.length - trail.length);
+        }
+        const href = /^https?:\/\//i.test(match) ? match : 'https://' + match;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${match}</a>${trail}`;
+      });
     }
 
     // Some proxy responses send booleans as strings ("true"/"false") or 0/1 instead
