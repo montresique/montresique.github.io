@@ -2217,7 +2217,14 @@
               </div>
             </div>
 
-            <div class="section-sub">Website Traffic (7 days)</div>
+            <div class="section-sub">Website Traffic</div>
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+              <select class="filter-select" id="ga-range-select" onchange="loadGoogleAnalytics()">
+                <option value="today">Today</option>
+                <option value="yesterday">Past Day</option>
+                <option value="7days" selected>Past Week</option>
+              </select>
+            </div>
             <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
               <div class="leader-card">
                 <div style="font-size:1.8rem;color:var(--violet);" id="stat-ga-users">&hellip;</div>
@@ -4016,8 +4023,10 @@
     }
 
     async function loadGoogleAnalytics() {
+      const rangeSel = document.getElementById('ga-range-select');
+      const range = rangeSel ? rangeSel.value : '7days';
       try {
-        const res = await fetch(GA_SUMMARY_URL);
+        const res = await fetch(GA_SUMMARY_URL + '?range=' + encodeURIComponent(range));
         const data = await res.json();
         const t = data.totals || {};
 
