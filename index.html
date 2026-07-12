@@ -24,6 +24,14 @@
     content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
   <meta name="twitter:image" id="meta-twitter-image" content="assets/logo.png" />
   <title id="page-title">Montresique [&#8499;]</title>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YK271DYK8T"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-YK271DYK8T');
+  </script>
   <style>
     @font-face {
       font-family: 'MultiCraftFont';
@@ -2208,6 +2216,32 @@
                 <div style="font-size:0.72rem;color:var(--muted);" id="stat-most-played-label">Most Played Server</div>
               </div>
             </div>
+
+            <div class="section-sub">Website Traffic (7 days)</div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+              <div class="leader-card">
+                <div style="font-size:1.8rem;color:var(--violet);" id="stat-ga-users">&hellip;</div>
+                <div style="font-size:0.72rem;color:var(--muted);">Visitors</div>
+              </div>
+              <div class="leader-card">
+                <div style="font-size:1.8rem;color:var(--cyan);" id="stat-ga-pageviews">&hellip;</div>
+                <div style="font-size:0.72rem;color:var(--muted);">Page Views</div>
+              </div>
+              <div class="leader-card">
+                <div style="font-size:1.8rem;color:var(--green);" id="stat-ga-sessions">&hellip;</div>
+                <div style="font-size:0.72rem;color:var(--muted);">Sessions</div>
+              </div>
+              <div class="leader-card">
+                <div style="font-size:1.8rem;color:var(--amber);" id="stat-ga-realtime">&hellip;</div>
+                <div style="font-size:0.72rem;color:var(--muted);">Active Right Now</div>
+              </div>
+            </div>
+
+            <div class="section-sub">Top Countries</div>
+            <div id="ga-geo-list" style="margin-bottom:1.5rem;"></div>
+
+            <div class="section-sub">Devices</div>
+            <div id="ga-device-list" style="margin-bottom:1.5rem;"></div>
           </div>
           <div class="macos-tab-content" id="admin-tab-team">
             <div class="section-sub" style="margin-top:0;">Add / Edit Team Member</div>
@@ -2340,6 +2374,9 @@
     const PLAYERS_URL_BASE = atob(PLAYERS_URL_BASE_B64);
     const REFRESH_MS = 10000;
 
+    const GA_SUMMARY_URL = 'https://montresique-ga-proxy-production.up.railway.app/proxy/analytics-summary';
+    const GA_REALTIME_URL = 'https://montresique-ga-proxy-production.up.railway.app/proxy/analytics-realtime';
+
     // ── News source config ──
     // Reads from this same repo's /news folder (relative path).
     // Folder layout expected:
@@ -2452,6 +2489,9 @@
     const VALID_TABS = ['home', 'servers', 'allservers', 'news', 'team', 'programs', 'admin'];
 
     function showPage(id, push = true) {
+      if (typeof gtag === 'function') {
+        gtag('event', 'page_view', { page_title: id, page_path: '/?tab=' + id });
+      }
       if (id === 'admin') {
         const prevActive = document.querySelector('.nav-links button.active');
         if (prevActive && prevActive.id !== 'nav-admin') {
@@ -3912,6 +3952,7 @@
       const tasks = [
         ['role defs', loadAdminRoleDefsList],
         ['analytics', loadAdminAnalytics],
+        ['google analytics', loadGoogleAnalytics],
         ['team list', loadAdminTeamList],
         ['users', loadAdminUsers],
         ['reviews', loadAdminReviews],
@@ -3967,6 +4008,51 @@
       } catch (e) {
         console.error('[analytics] failed:', e);
         mostPlayedEl.textContent = 'No data yet';
+      }
+    }
+
+    function gaNoDataHtml() {
+      return '<div style="color:var(--muted);font-size:0.8rem;">No data yet &mdash; check back in about a week.</div>';
+    }
+
+    async function loadGoogleAnalytics() {
+      try {
+        const res = await fetch(GA_SUMMARY_URL);
+        const data = await res.json();
+        const t = data.totals || {};
+
+        const hasAnyTotals = Number(t.users) > 0 || Number(t.pageViews) > 0 || Number(t.sessions) > 0;
+
+        document.getElementById('stat-ga-users').textContent = hasAnyTotals ? t.users : 'No data yet';
+        document.getElementById('stat-ga-pageviews').textContent = hasAnyTotals ? t.pageViews : 'No data yet';
+        document.getElementById('stat-ga-sessions').textContent = hasAnyTotals ? t.sessions : 'No data yet';
+
+        const geo = data.geo || [];
+        document.getElementById('ga-geo-list').innerHTML = geo.length ? geo.map(g => `
+          <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
+            <span>${esc(g.country)}</span><span style="color:var(--violet);">${esc(g.users)}</span>
+          </div>`).join('') : gaNoDataHtml();
+
+        const devices = data.devices || [];
+        document.getElementById('ga-device-list').innerHTML = devices.length ? devices.map(d => `
+          <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
+            <span style="text-transform:capitalize;">${esc(d.device)}</span><span style="color:var(--cyan);">${esc(d.users)}</span>
+          </div>`).join('') : gaNoDataHtml();
+      } catch (e) {
+        console.error('GA summary load failed', e);
+        ['stat-ga-users', 'stat-ga-pageviews', 'stat-ga-sessions'].forEach(id => document.getElementById(id).textContent = 'No data yet');
+        document.getElementById('ga-geo-list').innerHTML = gaNoDataHtml();
+        document.getElementById('ga-device-list').innerHTML = gaNoDataHtml();
+      }
+
+      try {
+        const rtRes = await fetch(GA_REALTIME_URL);
+        const rt = await rtRes.json();
+        const active = Number(rt.activeUsers || 0);
+        document.getElementById('stat-ga-realtime').textContent = active > 0 ? active : '0';
+      } catch (e) {
+        console.error('GA realtime load failed', e);
+        document.getElementById('stat-ga-realtime').textContent = 'No data yet';
       }
     }
     async function saveTeamMember() {
