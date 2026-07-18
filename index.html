@@ -1931,7 +1931,7 @@
 
     .emoji-ac-box {
       position: fixed;
-      z-index: 500;
+      z-index: 2000;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -2704,6 +2704,8 @@
     let customEmojiFiles = [];        // filenames auto-discovered from assets/emojis/
     let customEmojiFileSet = new Set();
     let newsReactionsCache = {};      // post_id -> [{ emoji, discord_user_id }]
+    let chatReactionsCache = {};      // message_id -> [{ emoji, discord_user_id }]
+    let reviewReactionsCache = {};    // review_id -> [{ emoji, discord_user_id }]
     let isAdmin = false;
     let isLeadership = false; // true only if the logged-in admin's team_members.section === 'leadership'
     let editingMemberId = null;
@@ -3701,6 +3703,7 @@
         const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
         const card = document.createElement('div');
         card.className = 'news-card';
+        card.dataset.postId = p.id;
         card.onclick = () => openNewsModal(p.id);
         card.innerHTML = `
         ${thumb}
@@ -3708,10 +3711,55 @@
           <div class="news-card-title">${esc(p.name)}</div>
           ${dateStr ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">${esc(dateStr)}</div>` : ''}
           <div class="news-card-desc">${emojifyCustom(linkify(p.description))}</div>
+          <div class="reaction-summary" id="news-card-reactions-${esc(p.id)}"></div>
         </div>
       `;
         gridEl.appendChild(card);
       });
+
+      loadNewsCardReactions(newsPosts.map(p => p.id));
+    }
+
+    // Compact, non-interactive reaction pill row for previews (news cards, chat
+    // messages, reviews). Unlike renderReactionBar (used in the full news modal),
+    // this never shows an "add reaction" control — it's just a summary.
+    function reactionSummaryHtml(rows) {
+      if (!rows || !rows.length) return '';
+      const groups = {};
+      rows.forEach(r => { (groups[r.emoji] = groups[r.emoji] || []).push(r); });
+      const mine = discordUser?.id;
+      const pills = Object.keys(groups).map(token => {
+        const people = groups[token];
+        const isMine = !!(mine && people.some(p => p.discord_user_id === mine));
+        const visual = customEmojiFileSet.has(token)
+          ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
+          : esc(token);
+        return `<span class="reaction-pill${isMine ? ' mine' : ''}" style="cursor:default;">${visual} <span>${people.length}</span></span>`;
+      }).join('');
+      return `<div class="reaction-bar" style="margin-top:0.6rem;">${pills}</div>`;
+    }
+
+    // Batch-fetches reaction rows for a set of news post ids in a single request
+    // (rather than one request per card) and drops a compact summary into each
+    // card's reserved slot. Also warms newsReactionsCache so the modal doesn't
+    // need to re-fetch immediately after opening from a card.
+    async function loadNewsCardReactions(postIds) {
+      if (!postIds || !postIds.length) return;
+      try {
+        const idsList = postIds.map(id => `"${id}"`).join(',');
+        const res = await fetch(SUPABASE_URL + '/rest/v1/news_reactions?select=post_id,emoji,discord_user_id,username&post_id=in.(' + idsList + ')', { headers: SUPABASE_HEADERS });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+        const byPost = {};
+        rows.forEach(r => { (byPost[r.post_id] = byPost[r.post_id] || []).push(r); });
+        postIds.forEach(id => {
+          newsReactionsCache[id] = byPost[id] || [];
+          const el = document.getElementById('news-card-reactions-' + id);
+          if (el) el.innerHTML = reactionSummaryHtml(byPost[id]);
+        });
+      } catch (e) {
+        console.error('Failed to load reaction summaries for news cards', e);
+      }
     }
 
     function openNewsModal(postId, push = true) {
@@ -3844,6 +3892,8 @@
         if (cached && Array.isArray(cached.files) && (Date.now() - cached.ts) < EMOJI_CACHE_MS) {
           customEmojiFiles = cached.files;
           customEmojiFileSet = new Set(customEmojiFiles);
+          console.log('[emoji] loaded', customEmojiFiles.length, 'custom emoji(s) from cache:', customEmojiFiles);
+          refreshOpenEmojiSurfaces();
           return;
         }
       } catch (e) { /* ignore corrupt cache */ }
@@ -3852,22 +3902,35 @@
         const res = await fetch(`https://api.github.com/repos/${EMOJI_REPO}/contents/${EMOJI_DIR}`, {
           headers: { Accept: 'application/vnd.github+json' },
         });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new Error('HTTP ' + res.status + ' — ' + body.slice(0, 300));
+        }
         const items = await res.json();
+        if (!Array.isArray(items)) {
+          throw new Error('GitHub API did not return a file listing — check that EMOJI_REPO ("' + EMOJI_REPO + '") and EMOJI_DIR ("' + EMOJI_DIR + '") point at an existing folder on the default branch.');
+        }
         customEmojiFiles = items
           .filter(it => it.type === 'file' && /\.(png|jpe?g|gif|webp|svg)$/i.test(it.name))
           .map(it => it.name)
           .sort();
         customEmojiFileSet = new Set(customEmojiFiles);
+        console.log('[emoji] discovered', customEmojiFiles.length, 'custom emoji(s) from', EMOJI_DIR + ':', customEmojiFiles);
+        if (customEmojiFiles.length === 0) {
+          console.warn('[emoji] Folder', EMOJI_DIR, 'exists but contains no .png/.jpg/.jpeg/.gif/.webp/.svg files.');
+        }
         try { localStorage.setItem(EMOJI_CACHE_KEY, JSON.stringify({ files: customEmojiFiles, ts: Date.now() })); } catch (e) { /* storage full/unavailable — fine, just skip caching */ }
+        refreshOpenEmojiSurfaces();
       } catch (e) {
-        console.error('Failed to auto-discover custom emojis from assets/emojis/', e);
+        console.error('[emoji] Failed to auto-discover custom emojis from ' + EMOJI_DIR + '/ — falling back to stale cache if any. Common causes: wrong EMOJI_REPO/EMOJI_DIR, GitHub API rate limit (403), or the folder not existing on the default branch.', e);
         // Fall back to a stale cache (if any) rather than showing no custom emoji at all.
         try {
           const cached = JSON.parse(localStorage.getItem(EMOJI_CACHE_KEY) || 'null');
           if (cached && Array.isArray(cached.files)) {
             customEmojiFiles = cached.files;
             customEmojiFileSet = new Set(customEmojiFiles);
+            console.log('[emoji] using stale cached list:', customEmojiFiles.length, 'emoji(s)');
+            refreshOpenEmojiSurfaces();
           }
         } catch (e2) { /* nothing we can do */ }
       }
@@ -3959,7 +4022,27 @@
         if (emojiAc.activeIndex >= items.length) emojiAc.activeIndex = 0;
       }
       drawEmojiAcList();
-      positionEmojiAcBox(el, emojiAc.box);
+      // Position on the next frame, after the box's content has actually painted —
+      // computing this synchronously right after innerHTML can use stale/zero
+      // dimensions in some browsers, which was leaving the box positioned at 0,0
+      // (effectively invisible) or behind other fixed-position UI.
+      requestAnimationFrame(() => { if (emojiAc && emojiAc.el === el) positionEmojiAcBox(el, emojiAc.box); });
+    }
+
+    // Called once loadCustomEmojis() resolves (success or fallback), so that if the
+    // user already has the ":" autocomplete open, or a news/chat/review preview is
+    // already on screen, custom emoji show up immediately instead of only after a
+    // re-render triggered by something else.
+    function refreshOpenEmojiSurfaces() {
+      if (emojiAc && emojiAc.el) {
+        updateEmojiAc(emojiAc.el);
+      }
+      document.querySelectorAll('[id^="reaction-picker-"]').forEach(c => {
+        if (c.dataset.open === '1') {
+          const search = c.querySelector('.emoji-picker-search');
+          if (search) search.dispatchEvent(new Event('input'));
+        }
+      });
     }
 
     function selectEmojiAcItem(idx) {
@@ -4375,10 +4458,35 @@
           const wasAtBottom = chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 60;
           chatMessagesEl.innerHTML = msgs.map(buildMessageHtml).join('');
           if (wasAtBottom || !hasContent) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+          loadChatReactionsFor(msgs.map(m => m.id));
         }
       } catch (err) {
         console.error('Chat load error:', err);
         if (!hasContent) chatMessagesEl.innerHTML = '<p class="chat-error">Could not load messages.</p>';
+      }
+    }
+
+    // Batch-fetches reactions for the currently visible chat messages and drops a
+    // compact summary under each bubble. Requires a `chat_reactions` table shaped
+    // like `news_reactions` (message_id, emoji, discord_user_id, username) — if
+    // that table doesn't exist yet, this fails silently to the console, same as
+    // other optional tables in this app (e.g. audit_log).
+    async function loadChatReactionsFor(messageIds) {
+      if (!messageIds || !messageIds.length) return;
+      try {
+        const idsList = messageIds.map(id => `"${id}"`).join(',');
+        const res = await fetch(SUPABASE_URL + '/rest/v1/chat_reactions?select=message_id,emoji,discord_user_id,username&message_id=in.(' + idsList + ')', { headers: SUPABASE_HEADERS });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+        const byMsg = {};
+        rows.forEach(r => { (byMsg[r.message_id] = byMsg[r.message_id] || []).push(r); });
+        messageIds.forEach(id => {
+          chatReactionsCache[id] = byMsg[id] || [];
+          const el = document.getElementById('chat-msg-reactions-' + id);
+          if (el) el.innerHTML = reactionSummaryHtml(byMsg[id]);
+        });
+      } catch (e) {
+        console.error('Could not load chat reactions (check chat_reactions table/policies):', e);
       }
     }
 
@@ -4391,12 +4499,14 @@
       const modBtn = isAdmin
         ? `<button onclick="deleteChatAdmin('${msg.id}')" title="Delete message (admin)" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.85rem;padding:0 0.2rem;line-height:1;">&times;</button>`
         : '';
+      const cachedReactions = chatReactionsCache[msg.id];
       return `<div class="chat-msg${isSelf ? ' self' : ''}">
       ${avatarHtml}
       <div class="chat-msg-content">
         <span class="chat-msg-user">${escChat(msg.username)}</span>
         <div class="chat-msg-bubble">${emojifyCustom(escChat(msg.message))}</div>
         <span class="chat-msg-time">${time}</span>
+        <div id="chat-msg-reactions-${esc(msg.id)}">${reactionSummaryHtml(cachedReactions)}</div>
       </div>
       ${modBtn}
     </div>`;
@@ -5173,6 +5283,7 @@
       const modBtn = isAdmin
         ? `<button onclick="deleteReviewAdmin('${r.id}','${esc(r.server_id)}')" title="Delete review (admin)" style="background:none;border:1px solid rgba(255,68,102,0.4);color:var(--red);cursor:pointer;font-size:0.7rem;border-radius:4px;padding:0.1rem 0.4rem;">Delete</button>`
         : '';
+      const cachedReactions = reviewReactionsCache[r.id];
       return `
       <div style="border:1px solid var(--border);border-radius:8px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
@@ -5182,7 +5293,31 @@
         </div>
         ${r.comment ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${emojifyCustom(esc(r.comment))}</div>` : ''}
         <div style="font-size:0.65rem;color:var(--muted);margin-top:0.3rem;">${esc(time)}</div>
+        <div id="review-reactions-${esc(r.id)}">${reactionSummaryHtml(cachedReactions)}</div>
       </div>`;
+    }
+
+    // Batch-fetches reactions for a set of review ids and drops a compact summary
+    // into each review card. Requires a `review_reactions` table shaped like
+    // `news_reactions` (review_id, emoji, discord_user_id, username) — if that
+    // table doesn't exist yet, this fails silently to the console.
+    async function loadReviewReactionsFor(reviewIds) {
+      if (!reviewIds || !reviewIds.length) return;
+      try {
+        const idsList = reviewIds.map(id => `"${id}"`).join(',');
+        const res = await fetch(SUPABASE_URL + '/rest/v1/review_reactions?select=review_id,emoji,discord_user_id,username&review_id=in.(' + idsList + ')', { headers: SUPABASE_HEADERS });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+        const byReview = {};
+        rows.forEach(r => { (byReview[r.review_id] = byReview[r.review_id] || []).push(r); });
+        reviewIds.forEach(id => {
+          reviewReactionsCache[id] = byReview[id] || [];
+          const el = document.getElementById('review-reactions-' + id);
+          if (el) el.innerHTML = reactionSummaryHtml(byReview[id]);
+        });
+      } catch (e) {
+        console.error('Could not load review reactions (check review_reactions table/policies):', e);
+      }
     }
 
     // Renders the reviews block for a given server into a container element.
@@ -5218,6 +5353,7 @@
 
       el.innerHTML = html;
       renderReviewForm(serverId, myReview);
+      loadReviewReactionsFor(reviews.map(r => r.id));
     }
 
     function renderReviewForm(serverId, myReview) {
