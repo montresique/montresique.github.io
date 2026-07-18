@@ -1920,6 +1920,181 @@
         transform: translateY(0);
       }
     }
+    /* ===== EMOJI SYSTEM ===== */
+    .emoji-inline {
+      height: 1.25em;
+      width: 1.25em;
+      object-fit: contain;
+      vertical-align: -0.25em;
+      display: inline-block;
+    }
+
+    .emoji-ac-box {
+      position: fixed;
+      z-index: 500;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 0.3rem;
+    }
+
+    .emoji-ac-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+
+    .emoji-ac-item img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .emoji-ac-uni {
+      font-size: 1.05rem;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .emoji-ac-name {
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .emoji-ac-item.active,
+    .emoji-ac-item:hover {
+      background: rgba(200, 160, 255, 0.12);
+    }
+
+    .reaction-bar-wrap {
+      margin-top: 0.8rem;
+    }
+
+    .reaction-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .reaction-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.78rem;
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'MultiCraftFont', monospace;
+    }
+
+    .reaction-pill img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+    }
+
+    .reaction-pill:hover {
+      border-color: rgba(200, 160, 255, 0.4);
+    }
+
+    .reaction-pill.mine {
+      border-color: var(--violet-d);
+      background: rgba(144, 96, 224, 0.18);
+    }
+
+    .reaction-add-btn {
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'MultiCraftFont', monospace;
+    }
+
+    .reaction-add-btn:hover {
+      color: var(--text);
+      border-color: rgba(200, 160, 255, 0.4);
+    }
+
+    .emoji-picker-popover {
+      position: relative;
+      margin-top: 0.5rem;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      width: min(280px, 90vw);
+      z-index: 50;
+    }
+
+    .emoji-picker-search {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'MultiCraftFont', monospace;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+      outline: none;
+      margin-bottom: 0.5rem;
+    }
+
+    .emoji-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+      gap: 0.25rem;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .emoji-picker-item {
+      background: none;
+      border: none;
+      border-radius: 5px;
+      padding: 0.3rem;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .emoji-picker-item:hover {
+      background: rgba(200, 160, 255, 0.15);
+    }
+
+    .emoji-picker-item img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+    }
+
+    .emoji-picker-empty {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      color: var(--muted);
+      padding: 0.5rem;
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -2411,6 +2586,9 @@
     let pendingModalServerId = null; // set by the router if ?server=ID was requested before servers loaded
     let newsPosts = [];     // [{ id, name, description, images }]
     let newsLoaded = false;
+    let customEmojiFiles = [];        // filenames auto-discovered from assets/emojis/
+    let customEmojiFileSet = new Set();
+    let newsReactionsCache = {};      // post_id -> [{ emoji, discord_user_id }]
     let isAdmin = false;
     let isLeadership = false; // true only if the logged-in admin's team_members.section === 'leadership'
     let editingMemberId = null;
@@ -2452,6 +2630,9 @@
     async function init() {
       const year = new Date().getFullYear();
       document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
+
+      loadCustomEmojis(); // fire and forget — populates the ":" autocomplete in the background
+      attachEmojiAutocomplete(document.getElementById('news-desc'));
 
       try {
         const [teamRows, roleRows, dataJson] = await Promise.all([
@@ -3411,7 +3592,7 @@
         <div class="news-card-body">
           <div class="news-card-title">${esc(p.name)}</div>
           ${dateStr ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">${esc(dateStr)}</div>` : ''}
-          <div class="news-card-desc">${linkify(p.description)}</div>
+          <div class="news-card-desc">${emojifyCustom(linkify(p.description))}</div>
         </div>
       `;
         gridEl.appendChild(card);
@@ -3432,9 +3613,11 @@
       <div class="modal-title">${esc(p.name)}</div>
       ${dateStr ? `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">${esc(dateStr)}</div>` : ''}
       ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
-      <div class="news-modal-desc">${linkify(p.description)}</div>
+      <div class="news-modal-desc">${emojifyCustom(linkify(p.description))}</div>
+      <div id="news-reactions-${esc(p.id)}" class="reaction-bar-wrap"></div>
     `;
       document.getElementById('news-modal').classList.add('open');
+      loadNewsReactions(p.id);
 
       setMetaTags({
         title: p.name + ' — Montresique News',
@@ -3452,6 +3635,7 @@
     }
     function closeNewsModal(push = true) {
       document.getElementById('news-modal').classList.remove('open');
+      closeReactionPicker();
       resetMetaTags();
       if (push) {
         const params = new URLSearchParams(location.search);
@@ -3482,6 +3666,332 @@
         const href = /^https?:\/\//i.test(match) ? match : 'https://' + match;
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${match}</a>${trail}`;
       });
+    }
+
+    // ============================================================
+    // EMOJI SYSTEM
+    // Two kinds of emoji:
+    //  - "standard" — a small built-in set of unicode emoji. Typing e.g. ":fire:"
+    //    and picking it from the autocomplete inserts the literal unicode
+    //    character right away, so nothing special is needed to render it later.
+    //  - "custom" — any image file dropped into assets/emojis/ on the repo.
+    //    File names are auto-discovered (no manifest to maintain) via the
+    //    GitHub API. Typing e.g. ":shocked" or ":shocked.png" autocompletes to
+    //    the real file name, inserted as a ":shocked.png:" token. That token is
+    //    turned into an <img> at render time by emojifyCustom(), wherever chat
+    //    messages / news descriptions / review comments are displayed.
+    // ============================================================
+
+    const EMOJI_REPO = 'montresique/montresique.github.io'; // change if the site ever moves repos
+    const EMOJI_DIR = 'assets/emojis';
+    const EMOJI_CACHE_KEY = 'montresique_custom_emojis_v1';
+    const EMOJI_CACHE_MS = 15 * 60 * 1000; // 15 min — keeps us well under GitHub's unauthenticated API rate limit
+
+    const STANDARD_EMOJI = {
+      smile: '😄', smiley: '😃', grin: '😁', joy: '😂', rofl: '🤣', wink: '😉',
+      blush: '😊', slight_smile: '🙂', upside_down: '🙃', heart_eyes: '😍',
+      kissing_heart: '😘', yum: '😋', sunglasses: '😎', thinking: '🤔',
+      neutral_face: '😐', expressionless: '😑', no_mouth: '😶', smirk: '😏',
+      unamused: '😒', roll_eyes: '🙄', triumph: '😤', pensive: '😔', confused: '😕',
+      slightly_frowning: '🙁', frowning: '☹️', persevere: '😣', cry: '😢',
+      sob: '😭', scream: '😱', confounded: '😖', tired_face: '😫', rage: '😡',
+      angry: '😠', flushed: '😳', hot_face: '🥵', cold_face: '🥶', dizzy_face: '😵',
+      astonished: '😲', open_mouth: '😮', hushed: '😯', sleeping: '😴', sleepy: '😪',
+      drooling: '🤤', mask: '😷', nauseated: '🤢', vomiting: '🤮', sneezing: '🤧',
+      zany: '🤪', shocked: '😨', ghost: '👻', skull: '💀', poop: '💩', clown: '🤡',
+      alien: '👽', robot: '🤖', jack_o_lantern: '🎃', wave: '👋', clap: '👏',
+      pray: '🙏', muscle: '💪', thumbsup: '👍', '+1': '👍', thumbsdown: '👎',
+      '-1': '👎', ok_hand: '👌', v: '✌️', crossed_fingers: '🤞', point_up: '☝️',
+      point_down: '👇', point_left: '👈', point_right: '👉', eyes: '👀',
+      brain: '🧠', tongue: '👅', heart: '❤️', orange_heart: '🧡',
+      yellow_heart: '💛', green_heart: '💚', blue_heart: '💙', purple_heart: '💜',
+      black_heart: '🖤', broken_heart: '💔', sparkling_heart: '💖',
+      two_hearts: '💕', fire: '🔥', star: '⭐', star2: '🌟', sparkles: '✨',
+      zap: '⚡', boom: '💥', dizzy: '💫', '100': '💯', check: '✅', x: '❌',
+      warning: '⚠️', question: '❓', exclamation: '❗', tada: '🎉',
+      confetti_ball: '🎊', gift: '🎁', trophy: '🏆', medal: '🏅', crown: '👑',
+      gem: '💎', moneybag: '💰', gear: '⚙️', hourglass: '⌛', clock: '⏰',
+      bulb: '💡', bomb: '💣', hammer: '🔨', pick: '⛏️', wrench: '🔧',
+      crystal_ball: '🔮', computer: '💻', keyboard: '⌨️', phone: '📱',
+      video_game: '🎮', dice: '🎲', rocket: '🚀', airplane: '✈️', car: '🚗',
+      house: '🏠', earth: '🌍', sun: '☀️', moon: '🌙', cloud: '☁️',
+      rainbow: '🌈', snowflake: '❄️', umbrella: '☔', dog: '🐶', cat: '🐱',
+      fox: '🦊', bear: '🐻', panda: '🐼', lion: '🦁', tiger: '🐯',
+      unicorn: '🦄', dragon: '🐉', frog: '🐸', chicken: '🐔', pig: '🐷',
+      cow: '🐮', spider: '🕷️', snake: '🐍', pizza: '🍕', burger: '🍔',
+      fries: '🍟', taco: '🌮', cookie: '🍪', cake: '🍰', beer: '🍺',
+      coffee: '☕', tea: '🍵', apple: '🍎',
+    };
+
+    async function loadCustomEmojis() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(EMOJI_CACHE_KEY) || 'null');
+        if (cached && Array.isArray(cached.files) && (Date.now() - cached.ts) < EMOJI_CACHE_MS) {
+          customEmojiFiles = cached.files;
+          customEmojiFileSet = new Set(customEmojiFiles);
+          return;
+        }
+      } catch (e) { /* ignore corrupt cache */ }
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${EMOJI_REPO}/contents/${EMOJI_DIR}`, {
+          headers: { Accept: 'application/vnd.github+json' },
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const items = await res.json();
+        customEmojiFiles = items
+          .filter(it => it.type === 'file' && /\.(png|jpe?g|gif|webp|svg)$/i.test(it.name))
+          .map(it => it.name)
+          .sort();
+        customEmojiFileSet = new Set(customEmojiFiles);
+        try { localStorage.setItem(EMOJI_CACHE_KEY, JSON.stringify({ files: customEmojiFiles, ts: Date.now() })); } catch (e) { /* storage full/unavailable — fine, just skip caching */ }
+      } catch (e) {
+        console.error('Failed to auto-discover custom emojis from assets/emojis/', e);
+        // Fall back to a stale cache (if any) rather than showing no custom emoji at all.
+        try {
+          const cached = JSON.parse(localStorage.getItem(EMOJI_CACHE_KEY) || 'null');
+          if (cached && Array.isArray(cached.files)) {
+            customEmojiFiles = cached.files;
+            customEmojiFileSet = new Set(customEmojiFiles);
+          }
+        } catch (e2) { /* nothing we can do */ }
+      }
+    }
+
+    // Turns any ":filename.ext:" token that matches a known custom emoji file
+    // into an <img>. Must be called on text that has ALREADY been HTML-escaped
+    // (e.g. the output of esc()/linkify()) — the token itself is plain
+    // alphanumeric/./_/-/+ so it's safe to match against escaped output.
+    function emojifyCustom(html) {
+      if (!customEmojiFileSet.size) return html;
+      return html.replace(/:([a-zA-Z0-9._+-]+):/g, (whole, name) => {
+        if (!customEmojiFileSet.has(name)) return whole;
+        return `<img class="emoji-inline" src="${EMOJI_DIR}/${name}" alt=":${name}:" title=":${name}:" loading="lazy" />`;
+      });
+    }
+
+    // ── ":" autocomplete, attached to any textarea/input ──
+    let emojiAc = null; // { el, box, start, items, activeIndex }
+
+    function emojiTokenAt(el) {
+      const pos = el.selectionStart;
+      const text = el.value.slice(0, pos);
+      const m = text.match(/:([a-zA-Z0-9._+-]*)$/);
+      return m ? { start: pos - m[0].length, query: m[1] } : null;
+    }
+
+    // Substring match anywhere in the name (so ":silly" finds "very_silly_2.png"),
+    // ranked by where the match occurs and then by name length.
+    function getEmojiCandidates(query) {
+      const q = query.toLowerCase();
+      const all = customEmojiFiles.map(f => ({ type: 'custom', key: f, disp: f }))
+        .concat(Object.keys(STANDARD_EMOJI).map(k => ({ type: 'standard', key: k, disp: STANDARD_EMOJI[k] })));
+      if (!q) return all.slice(0, 30);
+      const scored = all
+        .map(e => ({ e, s: e.key.toLowerCase().indexOf(q) }))
+        .filter(x => x.s !== -1)
+        .sort((a, b) => a.s - b.s || a.e.key.length - b.e.key.length);
+      return scored.slice(0, 30).map(x => x.e);
+    }
+
+    function closeEmojiAc() {
+      if (emojiAc) { emojiAc.box.remove(); emojiAc = null; }
+    }
+
+    function positionEmojiAcBox(el, box) {
+      const rect = el.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      box.style.left = Math.max(4, rect.left) + 'px';
+      box.style.width = Math.max(200, Math.min(rect.width, 320)) + 'px';
+      if (spaceBelow < 240 && rect.top > 240) {
+        box.style.top = (rect.top - 4) + 'px';
+        box.style.transform = 'translateY(-100%)';
+      } else {
+        box.style.top = (rect.bottom + 4) + 'px';
+        box.style.transform = 'none';
+      }
+    }
+
+    function drawEmojiAcList() {
+      if (!emojiAc) return;
+      if (emojiAc.items.length === 0) { closeEmojiAc(); return; }
+      emojiAc.box.innerHTML = emojiAc.items.map((it, i) => `
+      <div class="emoji-ac-item${i === emojiAc.activeIndex ? ' active' : ''}" data-idx="${i}">
+        ${it.type === 'custom'
+          ? `<img src="${EMOJI_DIR}/${esc(it.key)}" alt="" loading="lazy" />`
+          : `<span class="emoji-ac-uni">${it.disp}</span>`}
+        <span class="emoji-ac-name">${it.type === 'custom' ? esc(it.key) : ':' + esc(it.key) + ':'}</span>
+      </div>`).join('');
+      emojiAc.box.querySelectorAll('.emoji-ac-item').forEach(row => {
+        row.addEventListener('mousedown', (e) => { e.preventDefault(); selectEmojiAcItem(parseInt(row.dataset.idx, 10)); });
+      });
+    }
+
+    function updateEmojiAc(el) {
+      const token = emojiTokenAt(el);
+      if (!token) { closeEmojiAc(); return; }
+      const items = getEmojiCandidates(token.query);
+      if (items.length === 0) { closeEmojiAc(); return; }
+      if (!emojiAc || emojiAc.el !== el) {
+        closeEmojiAc();
+        const box = document.createElement('div');
+        box.className = 'emoji-ac-box';
+        document.body.appendChild(box);
+        emojiAc = { el, box, start: token.start, items, activeIndex: 0 };
+      } else {
+        emojiAc.start = token.start;
+        emojiAc.items = items;
+        if (emojiAc.activeIndex >= items.length) emojiAc.activeIndex = 0;
+      }
+      drawEmojiAcList();
+      positionEmojiAcBox(el, emojiAc.box);
+    }
+
+    function selectEmojiAcItem(idx) {
+      if (!emojiAc) return;
+      const it = emojiAc.items[idx];
+      if (!it) return;
+      const el = emojiAc.el;
+      const insertText = (it.type === 'custom' ? (':' + it.key + ':') : it.disp) + ' ';
+      const pos = el.selectionStart;
+      const before = el.value.slice(0, emojiAc.start);
+      const after = el.value.slice(pos);
+      el.value = before + insertText + after;
+      const newPos = before.length + insertText.length;
+      el.setSelectionRange(newPos, newPos);
+      el.focus();
+      el.dispatchEvent(new Event('input', { bubbles: true })); // keeps auto-resize etc. in sync
+      closeEmojiAc();
+    }
+
+    // Attaches ":" emoji autocomplete to any textarea/input. Safe to call
+    // multiple times on the same element (e.g. re-rendered review forms).
+    function attachEmojiAutocomplete(el) {
+      if (!el || el.dataset.emojiAcAttached) return;
+      el.dataset.emojiAcAttached = '1';
+      el.addEventListener('input', () => updateEmojiAc(el));
+      el.addEventListener('keydown', (e) => {
+        if (!emojiAc || emojiAc.el !== el) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); emojiAc.activeIndex = Math.min(emojiAc.activeIndex + 1, emojiAc.items.length - 1); drawEmojiAcList(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); emojiAc.activeIndex = Math.max(emojiAc.activeIndex - 1, 0); drawEmojiAcList(); }
+        else if (e.key === 'Tab') { e.preventDefault(); selectEmojiAcItem(emojiAc.activeIndex); }
+        else if (e.key === 'Escape') { closeEmojiAc(); }
+      });
+      el.addEventListener('blur', () => setTimeout(closeEmojiAc, 150));
+      window.addEventListener('scroll', () => { if (emojiAc && emojiAc.el === el) positionEmojiAcBox(el, emojiAc.box); }, true);
+    }
+
+    // ── Reactions on news posts ──
+    async function loadNewsReactions(postId) {
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/news_reactions?select=emoji,discord_user_id&post_id=eq.' + encodeURIComponent(postId), { headers: SUPABASE_HEADERS });
+        newsReactionsCache[postId] = res.ok ? await res.json() : (newsReactionsCache[postId] || []);
+      } catch (e) {
+        console.error('Failed to load reactions', e);
+        newsReactionsCache[postId] = newsReactionsCache[postId] || [];
+      }
+      renderReactionBar(postId);
+    }
+
+    function renderReactionBar(postId) {
+      const el = document.getElementById('news-reactions-' + postId);
+      if (!el) return;
+      const rows = newsReactionsCache[postId] || [];
+      const groups = {};
+      rows.forEach(r => { (groups[r.emoji] = groups[r.emoji] || []).push(r.discord_user_id); });
+      const mine = discordUser?.id;
+
+      const pills = Object.keys(groups).map(token => {
+        const isMine = !!(mine && groups[token].includes(mine));
+        const visual = customEmojiFileSet.has(token)
+          ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
+          : esc(token);
+        return `<button class="reaction-pill${isMine ? ' mine' : ''}" data-token="${esc(token)}" title="${esc(token)}">${visual} <span>${groups[token].length}</span></button>`;
+      }).join('');
+
+      el.innerHTML = `
+      <div class="reaction-bar">
+        ${pills}
+        <button class="reaction-add-btn" type="button">+ 😀</button>
+      </div>
+      <div id="reaction-picker-${esc(postId)}"></div>
+    `;
+
+      el.querySelectorAll('.reaction-pill').forEach(btn => {
+        btn.addEventListener('click', () => toggleReaction(postId, btn.dataset.token));
+      });
+      el.querySelector('.reaction-add-btn')?.addEventListener('click', (e) => openReactionPicker(postId, e.currentTarget));
+    }
+
+    async function toggleReaction(postId, token) {
+      if (!discordUser) { alert('Log in with Discord (top right) to react.'); return; }
+      const rows = newsReactionsCache[postId] || [];
+      const existing = rows.find(r => r.emoji === token && r.discord_user_id === discordUser.id);
+      try {
+        if (existing) {
+          await fetch(SUPABASE_URL + `/rest/v1/news_reactions?post_id=eq.${encodeURIComponent(postId)}&discord_user_id=eq.${encodeURIComponent(discordUser.id)}&emoji=eq.${encodeURIComponent(token)}`, {
+            method: 'DELETE', headers: SUPABASE_HEADERS,
+          });
+        } else {
+          await fetch(SUPABASE_URL + '/rest/v1/news_reactions', {
+            method: 'POST',
+            headers: Object.assign({}, SUPABASE_HEADERS, { 'Prefer': 'return=minimal' }),
+            body: JSON.stringify({
+              post_id: postId,
+              discord_user_id: discordUser.id,
+              username: getDiscordDisplayName(discordUser),
+              emoji: token,
+            }),
+          });
+        }
+        closeReactionPicker();
+        await loadNewsReactions(postId);
+      } catch (e) {
+        console.error('Reaction toggle failed', e);
+      }
+    }
+
+    function openReactionPicker(postId, btnEl) {
+      const container = document.getElementById('reaction-picker-' + postId);
+      if (!container) return;
+      const wasOpen = container.dataset.open === '1';
+      closeReactionPicker();
+      if (wasOpen) return; // acted as a toggle-close
+
+      if (!discordUser) { alert('Log in with Discord (top right) to react.'); return; }
+
+      container.dataset.open = '1';
+      container.innerHTML = `
+      <div class="emoji-picker-popover">
+        <input type="text" class="emoji-picker-search" placeholder="Search emoji&hellip;" />
+        <div class="emoji-picker-grid"></div>
+      </div>`;
+      const search = container.querySelector('.emoji-picker-search');
+      const grid = container.querySelector('.emoji-picker-grid');
+
+      function draw(q) {
+        const items = getEmojiCandidates(q || '');
+        grid.innerHTML = items.length ? items.map(it => `
+        <button class="emoji-picker-item" type="button" data-token="${esc(it.type === 'custom' ? it.key : it.disp)}" title="${esc(it.key)}">
+          ${it.type === 'custom' ? `<img src="${EMOJI_DIR}/${esc(it.key)}" alt="" loading="lazy" />` : it.disp}
+        </button>`).join('') : '<div class="emoji-picker-empty">No matches</div>';
+        grid.querySelectorAll('.emoji-picker-item').forEach(b => b.addEventListener('click', () => toggleReaction(postId, b.dataset.token)));
+      }
+      draw('');
+      search.addEventListener('input', () => draw(search.value.trim()));
+      search.addEventListener('click', (e) => e.stopPropagation());
+      setTimeout(() => search.focus(), 0);
+
+      document.addEventListener('click', outsideReactionPickerHandler, true);
+    }
+
+    function closeReactionPicker() {
+      document.querySelectorAll('[id^="reaction-picker-"]').forEach(c => { c.innerHTML = ''; c.dataset.open = '0'; });
+      document.removeEventListener('click', outsideReactionPickerHandler, true);
+    }
+
+    function outsideReactionPickerHandler(e) {
+      if (!e.target.closest('.emoji-picker-popover') && !e.target.closest('.reaction-add-btn')) closeReactionPicker();
     }
 
     // Some proxy responses send booleans as strings ("true"/"false") or 0/1 instead
@@ -3710,7 +4220,7 @@
       ${avatarHtml}
       <div class="chat-msg-content">
         <span class="chat-msg-user">${escChat(msg.username)}</span>
-        <div class="chat-msg-bubble">${escChat(msg.message)}</div>
+        <div class="chat-msg-bubble">${emojifyCustom(escChat(msg.message))}</div>
         <span class="chat-msg-time">${time}</span>
       </div>
       ${modBtn}
@@ -3806,12 +4316,17 @@
       });
       chatSendBtn?.addEventListener('click', sendChatMessage);
       chatInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (emojiAc && emojiAc.el === chatInput) { selectEmojiAcItem(emojiAc.activeIndex); return; }
+          sendChatMessage();
+        }
       });
       chatInput?.addEventListener('input', () => {
         chatInput.style.height = 'auto';
         chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
       });
+      attachEmojiAutocomplete(chatInput);
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden && chatPollingInterval) {
@@ -4490,7 +5005,7 @@
           <span style="font-size:0.82rem;color:#fff;">${esc(r.username)}</span>
           <span style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">${starsHtml(r.rating, '0.75rem')}${modBtn}</span>
         </div>
-        ${r.comment ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${esc(r.comment)}</div>` : ''}
+        ${r.comment ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">${emojifyCustom(esc(r.comment))}</div>` : ''}
         <div style="font-size:0.65rem;color:var(--muted);margin-top:0.3rem;">${esc(time)}</div>
       </div>`;
     }
@@ -4556,6 +5071,7 @@
       renderStarInput(serverId, currentRating);
 
       document.getElementById('submit-review-' + serverId)?.addEventListener('click', () => submitReview(serverId));
+      attachEmojiAutocomplete(document.getElementById('review-comment-' + serverId));
     }
 
     function renderStarInput(serverId, selected) {
