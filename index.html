@@ -3964,7 +3964,7 @@
       const q = query.toLowerCase();
       const all = customEmojiFiles.map(f => ({ type: 'custom', key: f, disp: f }))
         .concat(Object.keys(STANDARD_EMOJI).map(k => ({ type: 'standard', key: k, disp: STANDARD_EMOJI[k] })));
-      if (!q) return all.slice(0, 30);
+      if (!q) return all; // bare ":" or an empty-search reaction picker shows every emoji, no cap
       const scored = all
         .map(e => ({ e, s: e.key.toLowerCase().indexOf(q) }))
         .filter(x => x.s !== -1)
