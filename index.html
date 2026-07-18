@@ -1929,6 +1929,13 @@
       display: inline-block;
     }
 
+    .emoji-broken {
+      display: inline-block;
+      font-size: 0.85em;
+      opacity: 0.6;
+      cursor: help;
+    }
+
     .emoji-ac-box {
       position: fixed;
       z-index: 2000;
@@ -3732,11 +3739,26 @@
         const people = groups[token];
         const isMine = !!(mine && people.some(p => p.discord_user_id === mine));
         const visual = customEmojiFileSet.has(token)
-          ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
+          ? `<img class="emoji-inline" src="${emojiFileSrc(token)}" alt="" ${emojiOnErrorAttr(token)} />`
           : esc(token);
-        return `<span class="reaction-pill${isMine ? ' mine' : ''}" style="cursor:default;">${visual} <span>${people.length}</span></span>`;
+        return `<div class="reaction-pill-wrap">
+        <span class="reaction-pill${isMine ? ' mine' : ''}" style="cursor:default;" data-token="${esc(token)}">${visual} <span>${people.length}</span></span>
+        <div class="reaction-tooltip" data-token="${esc(token)}"></div>
+      </div>`;
       }).join('');
       return `<div class="reaction-bar" style="margin-top:0.6rem;">${pills}</div>`;
+    }
+
+    // Attaches hover-to-see-who-reacted behavior to a reactionSummaryHtml() preview
+    // (news card, chat bubble, or review card) using the same tooltip logic as the
+    // full news modal. `rows` is the raw reaction rows (discord_user_id/username).
+    function attachReactionHovers(containerEl, rows) {
+      if (!containerEl || !rows || !rows.length) return;
+      const groups = {};
+      rows.forEach(r => {
+        (groups[r.emoji] = groups[r.emoji] || []).push({ id: r.discord_user_id, name: r.username || 'Someone' });
+      });
+      attachReactionTooltips(containerEl, groups);
     }
 
     // Batch-fetches reaction rows for a set of news post ids in a single request
@@ -3755,7 +3777,10 @@
         postIds.forEach(id => {
           newsReactionsCache[id] = byPost[id] || [];
           const el = document.getElementById('news-card-reactions-' + id);
-          if (el) el.innerHTML = reactionSummaryHtml(byPost[id]);
+          if (el) {
+            el.innerHTML = reactionSummaryHtml(byPost[id]);
+            attachReactionHovers(el, byPost[id]);
+          }
         });
       } catch (e) {
         console.error('Failed to load reaction summaries for news cards', e);
@@ -3849,6 +3874,38 @@
     const EMOJI_DIR = 'assets/emojis';
     const EMOJI_CACHE_KEY = 'montresique_custom_emojis_v1';
     const EMOJI_CACHE_MS = 15 * 60 * 1000; // 15 min — keeps us well under GitHub's unauthenticated API rate limit
+    const emojiLoadFailures = new Set(); // filenames that have thrown a load error, so we only warn once each
+
+    // Builds the <img> src for a custom emoji file, URI-encoding the filename so
+    // spaces, apostrophes, parentheses, unicode characters, "#", "%", "&", etc. in
+    // the actual uploaded filename don't silently break the URL (this was the
+    // cause of some custom emojis — usually the ones with more "creative" names —
+    // never loading even though they were discovered correctly).
+    function emojiFileSrc(name) {
+      return EMOJI_DIR + '/' + encodeURIComponent(name).replace(/%2F/gi, '/');
+    }
+
+    // Shared onerror handler wired onto every custom-emoji <img>: logs which exact
+    // file failed (once per file) so it's easy to tell — from the console — which
+    // uploaded emoji is missing/misnamed/corrupt on GitHub, and swaps in a small
+    // visible placeholder instead of leaving an invisible/broken image.
+    function handleEmojiImgError(imgEl, rawName) {
+      if (!emojiLoadFailures.has(rawName)) {
+        emojiLoadFailures.add(rawName);
+        console.error('[emoji] Failed to load "' + rawName + '" from ' + emojiFileSrc(rawName) + ' — check the file exists in ' + EMOJI_DIR + '/ on the default branch with that exact name/case.');
+      }
+      imgEl.outerHTML = `<span class="emoji-broken" title="Could not load :${esc(rawName)}:">&#9888;&#65039;</span>`;
+    }
+    window.handleEmojiImgError = handleEmojiImgError; // used from inline onerror="" attributes
+
+    // Builds a safe onerror="" attribute value for a custom emoji <img>: the
+    // filename is escaped for both the JS string literal (backslashes/quotes)
+    // and the surrounding HTML attribute (& < > "), so filenames with apostrophes,
+    // parentheses, unicode, etc. can't break the markup.
+    function emojiOnErrorAttr(rawName) {
+      const jsSafe = String(rawName).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `onerror="handleEmojiImgError(this, '${esc(jsSafe)}')"`;
+    }
 
     const STANDARD_EMOJI = {
       smile: '😄', smiley: '😃', grin: '😁', joy: '😂', rofl: '🤣', wink: '😉',
@@ -3942,9 +3999,17 @@
     // alphanumeric/./_/-/+ so it's safe to match against escaped output.
     function emojifyCustom(html) {
       if (!customEmojiFileSet.size) return html;
-      return html.replace(/:([a-zA-Z0-9._+-]+):/g, (whole, name) => {
+      // Previously this only matched ":[a-zA-Z0-9._+-]+:" — any custom emoji whose
+      // actual filename had a space, apostrophe, parentheses, or other punctuation
+      // (common for "creative" emoji names) could be picked from the autocomplete
+      // and inserted as ":My Cool One.gif:", but would then NEVER render because the
+      // token itself didn't match the whitelist. Matching is now permissive (any
+      // non-colon run up to 100 chars) and safety comes from requiring an EXACT
+      // match against the known custom-emoji filename set, not from the character
+      // whitelist — so this can't accidentally light up random ":word:word:" text.
+      return html.replace(/:([^:\n]{1,100}):/g, (whole, name) => {
         if (!customEmojiFileSet.has(name)) return whole;
-        return `<img class="emoji-inline" src="${EMOJI_DIR}/${name}" alt=":${name}:" title=":${name}:" loading="lazy" />`;
+        return `<img class="emoji-inline" src="${emojiFileSrc(name)}" alt=":${esc(name)}:" title=":${esc(name)}:" loading="lazy" ${emojiOnErrorAttr(name)} />`;
       });
     }
 
@@ -4119,17 +4184,30 @@
         <button class="reaction-add-btn" type="button">+ 😀</button>
       </div>
       <div id="reaction-picker-${esc(postId)}"></div>
-      <div id="reaction-list-modal-${esc(postId)}"></div>
     `;
 
       el.querySelectorAll('.reaction-pill').forEach(btn => {
         btn.addEventListener('click', () => toggleReaction(postId, btn.dataset.token));
       });
 
-      el.querySelectorAll('.reaction-pill-wrap').forEach(wrap => {
-        const token = wrap.querySelector('.reaction-pill').dataset.token;
+      attachReactionTooltips(el, groups);
+
+      el.querySelector('.reaction-add-btn')?.addEventListener('click', (e) => openReactionPicker(postId, e.currentTarget));
+    }
+
+    // Shared hover-tooltip wiring for any container holding `.reaction-pill-wrap`
+    // elements (built by renderReactionBar's interactive pills, or by
+    // reactionSummaryHtml's read-only preview pills). `groups` maps
+    // emoji-token -> [{ id, name }]. This is what makes hover-to-see-who-reacted
+    // work everywhere reactions are shown, not just inside the full news modal.
+    function attachReactionTooltips(containerEl, groups) {
+      if (!containerEl) return;
+      containerEl.querySelectorAll('.reaction-pill-wrap').forEach(wrap => {
+        const pillEl = wrap.querySelector('.reaction-pill');
+        const token = pillEl?.dataset.token;
         const tooltip = wrap.querySelector('.reaction-tooltip');
         const people = groups[token];
+        if (!tooltip || !people) return;
         let hideTimer = null;
 
         function showTooltip() {
@@ -4143,7 +4221,7 @@
           tooltip.classList.add('visible');
           tooltip.querySelector('.reaction-tooltip-viewall')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            openReactionListModal(postId, token, people);
+            showReactionListOverlay(token, people);
           });
         }
         function hideTooltipDelayed() { hideTimer = setTimeout(() => tooltip.classList.remove('visible'), 150); }
@@ -4153,32 +4231,35 @@
         tooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
         tooltip.addEventListener('mouseleave', hideTooltipDelayed);
       });
-
-      el.querySelector('.reaction-add-btn')?.addEventListener('click', (e) => openReactionPicker(postId, e.currentTarget));
     }
 
-    function openReactionListModal(postId, token, people) {
-      const container = document.getElementById('reaction-list-modal-' + postId);
-      if (!container) return;
+    // Body-level "who reacted" overlay — not scoped to any particular post/message/
+    // review container, so "View all" works from a news card, a chat bubble, or a
+    // review preview just as well as from inside the full news modal.
+    function showReactionListOverlay(token, people) {
+      closeReactionListOverlay();
       const visual = customEmojiFileSet.has(token)
         ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
         : esc(token);
-      container.innerHTML = `
-      <div class="reaction-list-overlay">
-        <div class="reaction-list-box">
-          <div class="reaction-list-header">
-            <span>${visual} ${people.length} reaction${people.length === 1 ? '' : 's'}</span>
-            <button type="button" class="reaction-list-close">&times;</button>
-          </div>
-          <div class="reaction-list-names">
-            ${people.map(p => `<div class="reaction-list-row">${esc(p.name)}</div>`).join('')}
-          </div>
+      const overlay = document.createElement('div');
+      overlay.className = 'reaction-list-overlay';
+      overlay.id = 'reaction-list-overlay-dynamic';
+      overlay.innerHTML = `
+      <div class="reaction-list-box">
+        <div class="reaction-list-header">
+          <span>${visual} ${people.length} reaction${people.length === 1 ? '' : 's'}</span>
+          <button type="button" class="reaction-list-close">&times;</button>
+        </div>
+        <div class="reaction-list-names">
+          ${people.map(p => `<div class="reaction-list-row">${esc(p.name)}</div>`).join('')}
         </div>
       </div>`;
-      container.querySelector('.reaction-list-close').addEventListener('click', () => { container.innerHTML = ''; });
-      container.querySelector('.reaction-list-overlay').addEventListener('click', (e) => {
-        if (e.target.classList.contains('reaction-list-overlay')) container.innerHTML = '';
-      });
+      document.body.appendChild(overlay);
+      overlay.querySelector('.reaction-list-close').addEventListener('click', closeReactionListOverlay);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) closeReactionListOverlay(); });
+    }
+    function closeReactionListOverlay() {
+      document.getElementById('reaction-list-overlay-dynamic')?.remove();
     }
 
     async function toggleReaction(postId, token) {
@@ -4458,6 +4539,10 @@
           const wasAtBottom = chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 60;
           chatMessagesEl.innerHTML = msgs.map(buildMessageHtml).join('');
           if (wasAtBottom || !hasContent) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+          msgs.forEach(m => {
+            const cached = chatReactionsCache[m.id];
+            if (cached && cached.length) attachReactionHovers(document.getElementById('chat-msg-reactions-' + m.id), cached);
+          });
           loadChatReactionsFor(msgs.map(m => m.id));
         }
       } catch (err) {
@@ -4483,7 +4568,10 @@
         messageIds.forEach(id => {
           chatReactionsCache[id] = byMsg[id] || [];
           const el = document.getElementById('chat-msg-reactions-' + id);
-          if (el) el.innerHTML = reactionSummaryHtml(byMsg[id]);
+          if (el) {
+            el.innerHTML = reactionSummaryHtml(byMsg[id]);
+            attachReactionHovers(el, byMsg[id]);
+          }
         });
       } catch (e) {
         console.error('Could not load chat reactions (check chat_reactions table/policies):', e);
@@ -5313,7 +5401,10 @@
         reviewIds.forEach(id => {
           reviewReactionsCache[id] = byReview[id] || [];
           const el = document.getElementById('review-reactions-' + id);
-          if (el) el.innerHTML = reactionSummaryHtml(byReview[id]);
+          if (el) {
+            el.innerHTML = reactionSummaryHtml(byReview[id]);
+            attachReactionHovers(el, byReview[id]);
+          }
         });
       } catch (e) {
         console.error('Could not load review reactions (check review_reactions table/policies):', e);
@@ -5353,6 +5444,10 @@
 
       el.innerHTML = html;
       renderReviewForm(serverId, myReview);
+      reviews.forEach(r => {
+        const cached = reviewReactionsCache[r.id];
+        if (cached && cached.length) attachReactionHovers(document.getElementById('review-reactions-' + r.id), cached);
+      });
       loadReviewReactionsFor(reviews.map(r => r.id));
     }
 
