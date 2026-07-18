@@ -2018,6 +2018,121 @@
       background: rgba(144, 96, 224, 0.18);
     }
 
+    .reaction-pill-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .reaction-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.72rem;
+      color: var(--text);
+      white-space: nowrap;
+      max-width: 240px;
+      white-space: normal;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      z-index: 60;
+      text-align: center;
+    }
+
+    .reaction-tooltip.visible {
+      display: block;
+    }
+
+    .reaction-tooltip-names {
+      line-height: 1.4;
+    }
+
+    .reaction-tooltip-more-inline {
+      color: var(--muted);
+    }
+
+    .reaction-tooltip-viewall {
+      display: block;
+      width: 100%;
+      margin-top: 0.35rem;
+      background: none;
+      border: none;
+      border-top: 1px solid var(--border);
+      padding-top: 0.3rem;
+      color: var(--cyan);
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: 'MultiCraftFont', monospace;
+    }
+
+    .reaction-tooltip-viewall:hover {
+      text-decoration: underline;
+    }
+
+    .reaction-list-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .reaction-list-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: min(320px, 90vw);
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .reaction-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .reaction-list-header button.reaction-list-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .reaction-list-header button.reaction-list-close:hover {
+      color: var(--text);
+    }
+
+    .reaction-list-names {
+      overflow-y: auto;
+      padding: 0.4rem 0;
+    }
+
+    .reaction-list-row {
+      padding: 0.5rem 0.9rem;
+      font-size: 0.82rem;
+      color: var(--text);
+      border-bottom: 1px solid rgba(200, 160, 255, 0.06);
+    }
+
+    .reaction-list-row:last-child {
+      border-bottom: none;
+    }
+
     .reaction-add-btn {
       background: none;
       border: 1px dashed var(--border);
@@ -3884,7 +3999,7 @@
     // ── Reactions on news posts ──
     async function loadNewsReactions(postId) {
       try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/news_reactions?select=emoji,discord_user_id&post_id=eq.' + encodeURIComponent(postId), { headers: SUPABASE_HEADERS });
+        const res = await fetch(SUPABASE_URL + '/rest/v1/news_reactions?select=emoji,discord_user_id,username&post_id=eq.' + encodeURIComponent(postId), { headers: SUPABASE_HEADERS });
         newsReactionsCache[postId] = res.ok ? await res.json() : (newsReactionsCache[postId] || []);
       } catch (e) {
         console.error('Failed to load reactions', e);
@@ -3898,15 +4013,21 @@
       if (!el) return;
       const rows = newsReactionsCache[postId] || [];
       const groups = {};
-      rows.forEach(r => { (groups[r.emoji] = groups[r.emoji] || []).push(r.discord_user_id); });
+      rows.forEach(r => {
+        (groups[r.emoji] = groups[r.emoji] || []).push({ id: r.discord_user_id, name: r.username || 'Someone' });
+      });
       const mine = discordUser?.id;
 
       const pills = Object.keys(groups).map(token => {
-        const isMine = !!(mine && groups[token].includes(mine));
+        const people = groups[token];
+        const isMine = !!(mine && people.some(p => p.id === mine));
         const visual = customEmojiFileSet.has(token)
           ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
           : esc(token);
-        return `<button class="reaction-pill${isMine ? ' mine' : ''}" data-token="${esc(token)}" title="${esc(token)}">${visual} <span>${groups[token].length}</span></button>`;
+        return `<div class="reaction-pill-wrap">
+        <button class="reaction-pill${isMine ? ' mine' : ''}" data-token="${esc(token)}">${visual} <span>${people.length}</span></button>
+        <div class="reaction-tooltip" data-token="${esc(token)}"></div>
+      </div>`;
       }).join('');
 
       el.innerHTML = `
@@ -3915,12 +4036,66 @@
         <button class="reaction-add-btn" type="button">+ 😀</button>
       </div>
       <div id="reaction-picker-${esc(postId)}"></div>
+      <div id="reaction-list-modal-${esc(postId)}"></div>
     `;
 
       el.querySelectorAll('.reaction-pill').forEach(btn => {
         btn.addEventListener('click', () => toggleReaction(postId, btn.dataset.token));
       });
+
+      el.querySelectorAll('.reaction-pill-wrap').forEach(wrap => {
+        const token = wrap.querySelector('.reaction-pill').dataset.token;
+        const tooltip = wrap.querySelector('.reaction-tooltip');
+        const people = groups[token];
+        let hideTimer = null;
+
+        function showTooltip() {
+          clearTimeout(hideTimer);
+          const shown = people.slice(0, 5);
+          const remaining = people.length - shown.length;
+          tooltip.innerHTML = `
+          <div class="reaction-tooltip-names">${shown.map(p => esc(p.name)).join(', ')}${remaining > 0 ? `<span class="reaction-tooltip-more-inline"> and ${remaining} more</span>` : ''}</div>
+          ${remaining > 0 ? `<button type="button" class="reaction-tooltip-viewall">View all ${people.length}</button>` : ''}
+        `;
+          tooltip.classList.add('visible');
+          tooltip.querySelector('.reaction-tooltip-viewall')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openReactionListModal(postId, token, people);
+          });
+        }
+        function hideTooltipDelayed() { hideTimer = setTimeout(() => tooltip.classList.remove('visible'), 150); }
+
+        wrap.addEventListener('mouseenter', showTooltip);
+        wrap.addEventListener('mouseleave', hideTooltipDelayed);
+        tooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+        tooltip.addEventListener('mouseleave', hideTooltipDelayed);
+      });
+
       el.querySelector('.reaction-add-btn')?.addEventListener('click', (e) => openReactionPicker(postId, e.currentTarget));
+    }
+
+    function openReactionListModal(postId, token, people) {
+      const container = document.getElementById('reaction-list-modal-' + postId);
+      if (!container) return;
+      const visual = customEmojiFileSet.has(token)
+        ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
+        : esc(token);
+      container.innerHTML = `
+      <div class="reaction-list-overlay">
+        <div class="reaction-list-box">
+          <div class="reaction-list-header">
+            <span>${visual} ${people.length} reaction${people.length === 1 ? '' : 's'}</span>
+            <button type="button" class="reaction-list-close">&times;</button>
+          </div>
+          <div class="reaction-list-names">
+            ${people.map(p => `<div class="reaction-list-row">${esc(p.name)}</div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+      container.querySelector('.reaction-list-close').addEventListener('click', () => { container.innerHTML = ''; });
+      container.querySelector('.reaction-list-overlay').addEventListener('click', (e) => {
+        if (e.target.classList.contains('reaction-list-overlay')) container.innerHTML = '';
+      });
     }
 
     async function toggleReaction(postId, token) {
