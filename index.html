@@ -2315,6 +2315,12 @@
     .adm-card span { display: block; font-size: 1.05rem; margin-bottom: .4rem; }
     .adm-card small { color: var(--muted); font-size: .74rem; }
     .adm-frame { width: 100%; height: 540px; border: 1px solid var(--border); border-radius: 10px; background: #000; }
+  
+    .adm-addr { font-size: .76rem; line-height: 1.5; border-radius: 8px; padding: .55rem .8rem; border: 1px solid var(--border); display: none; }
+    .adm-addr.show { display: block; }
+    .adm-addr.ok { color: #7dffb3; border-color: rgba(0,255,136,.35); background: rgba(0,255,136,.06); }
+    .adm-addr.warn { color: var(--amber); border-color: rgba(255,179,71,.35); background: rgba(255,179,71,.06); }
+    .adm-addr.bad { color: #ff8da1; border-color: rgba(255,68,102,.4); background: rgba(255,68,102,.07); }
   </style>
 </head>
 
@@ -4602,7 +4608,9 @@
     const HUB_REPO = 'montresique/montresique.github.io'; // used to list .html files in the admin "Choose an HTML file" dropdown
     const MC_DIVISION = { id: 'multicraft', name: 'Montresique MultiCraft', description: 'Servers, programs, team and research for MultiCraft \u2014 Build and Mine.', html_url: 'multicraft.html', admin_only: false };
     const hubHttp = u => /^https?:\/\/\S+$/i.test(u || '') ? u : '';
-    const hubHtmlTarget = u => (/^https?:\/\/\S+$/i.test(u || '') || /^[\w\-./]+\.html?(\?[\w=&\-]*)?$/i.test(u || '')) ? u : '';
+    const hubHtmlTarget = u => ((/^https?:\/\/\S+$/i.test(u || '') || /^\/?[\w\-./]+(\?[\w=&\-]*)?$/.test(u || '')) && !/^\/\/|\.\./.test(u || '')) ? u : '';
+    const hubNormAddr = u => String(u || '').trim().replace(/^https?:\/\/(www\.)?montresique\.com/i, '').replace(/^\//, '').replace(/\.html?$/i, '').toLowerCase();
+    const hubAllDivs = () => hubDivisions.some(d => hubNormAddr(d.html_url) === 'multicraft') ? hubDivisions : hubAllDivs();
     const hubSetStatus = (id, msg) => { const el = document.getElementById(id); if (el) el.textContent = msg || ''; };
 
     const DISCORD_INVITE = ''; // optional: paste a fixed invite here; otherwise the Discord link comes from the Socials tab in the admin panel
@@ -4631,7 +4639,7 @@
     let hubHtmlMissing = {};
     const hubIsCross = u => /^https?:/i.test(u) && new URL(u).origin !== location.origin;
     async function hubCheckAll() {
-      const targets = [...new Set([MC_DIVISION, ...hubDivisions].map(d => hubHtmlTarget(d.html_url)).filter(Boolean))];
+      const targets = [...new Set(hubAllDivs().map(d => hubHtmlTarget(d.html_url)).filter(Boolean))];
       await Promise.all(targets.map(async t => {
         try {
           if (hubIsCross(t)) { await fetch(t, { mode: 'no-cors', cache: 'no-store' }); hubHtmlMissing[t] = false; }
@@ -4672,7 +4680,7 @@
     }
 
     function hubRenderDivisions() {
-      const all = [MC_DIVISION, ...hubDivisions];
+      const all = hubAllDivs();
       const html = all.map(d => {
         const locked = d.admin_only && !isAdmin;
         const target = hubHtmlTarget(d.html_url);
@@ -6108,6 +6116,142 @@
 })();
 </script>
 <!-- adm-greeting -->
+
+<script>
+(function () {
+  const ROOT = 'montresique.com';
+
+  // ---------- address check (is Cloudflare DNS needed?) ----------
+  async function addrReport(v) {
+    v = (v || '').trim();
+    if (!v) return null;
+    if (!hubHtmlTarget(v)) return ['bad', 'Use a page like multicraft.html, a path like /multicraft, or a full https:// address.'];
+    let u;
+    try { u = new URL(v, location.origin + '/'); } catch (e) { return ['bad', 'That address is not valid.']; }
+    const host = u.hostname.toLowerCase();
+    if (host === ROOT || host === 'www.' + ROOT || u.origin === location.origin) {
+      const note = 'Same site as ' + ROOT + ': no Cloudflare DNS needed.';
+      if (u.origin === location.origin) {
+        try {
+          const r = await fetch(u.pathname + u.search, { method: 'HEAD', cache: 'no-store' });
+          if (r.status === 404 || r.status === 410) {
+            const p = u.pathname.replace(/^\//, '');
+            return ['bad', note + ' But that page was not found. Upload ' + (/\.html?$/i.test(p) ? p : p + '.html') + ' to your repo.'];
+          }
+        } catch (e) { }
+      }
+      return ['ok', note + ' GitHub Pages serves /name from name.html.'];
+    }
+    try {
+      const r = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(host) + '&type=A', { headers: { accept: 'application/dns-json' } });
+      const j = await r.json();
+      if (j.Answer && j.Answer.length) return ['ok', 'DNS record found for ' + host + ': no Cloudflare DNS changes needed.'];
+      if (host.endsWith('.' + ROOT)) {
+        const sub = host.slice(0, -(ROOT.length + 1));
+        return ['warn', 'Needs Cloudflare DNS: no record exists for ' + host + '. In Cloudflare go to DNS, Add record, Type CNAME, Name "' + sub + '", Target = where that division is hosted (for example montresique.github.io), Proxy status DNS only. GitHub Pages allows one custom domain per repo, so a subdomain needs its own repo or host.'];
+      }
+      return ['warn', 'Needs DNS: no record exists for ' + host + '. Add a CNAME (or A) record at wherever that domain\'s DNS is managed (Cloudflare if it manages it) pointing to the host.'];
+    } catch (e) { return ['warn', 'Could not run the DNS check right now.']; }
+  }
+
+  let t = null;
+  async function checkAddr() {
+    const el = document.getElementById('div-addr-status');
+    if (!el) return;
+    const rep = await addrReport(document.getElementById('div-html').value);
+    if (!rep) { el.className = 'adm-addr'; el.textContent = ''; return; }
+    el.className = 'adm-addr show ' + rep[0];
+    el.textContent = rep[1];
+  }
+  const inp = document.getElementById('div-html');
+  inp.placeholder = 'Page (multicraft.html), path (/multicraft) or full URL. Blank = COMING SOON';
+  inp.insertAdjacentHTML('afterend', '<div id="div-addr-status" class="adm-addr"></div>');
+  inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(checkAddr, 500); });
+  document.getElementById('div-html-select').addEventListener('change', () => setTimeout(checkAddr, 0));
+
+  const _edit = hubEditDivision;
+  hubEditDivision = function (id) { _edit(id); checkAddr(); };
+  const _cancel = hubCancelDivisionEdit;
+  hubCancelDivisionEdit = function () { _cancel(); checkAddr(); };
+
+  // ---------- make MultiCraft editable ----------
+  window.admMakeMcEditable = async function () {
+    if (!confirm('Turn MultiCraft into a normal division you can edit and delete?')) return;
+    try {
+      await adminRest('hub_divisions', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: MC_DIVISION.name, description: MC_DIVISION.description, html_url: 'multicraft.html', admin_only: false }) });
+      hubLoadData();
+    } catch (e) { alert('Could not save: ' + e.message); }
+  };
+  const _ral = hubRenderAdminLists;
+  hubRenderAdminLists = function () {
+    _ral();
+    const n = document.querySelector('#admin-tab-divisions > div:nth-child(2)');
+    if (!n) return;
+    const inDb = hubDivisions.some(d => hubNormAddr(d.html_url) === 'multicraft');
+    n.innerHTML = inDb ? 'Montresique MultiCraft is a normal division now. Edit it in the list below.'
+      : 'Montresique MultiCraft is built in and cannot be edited. <button class="players-btn" onclick="admMakeMcEditable()">Make it editable</button>';
+  };
+
+  // ---------- URLs for hub tabs ----------
+  const _hs = hubShow;
+  const setQs = fn => { const p = new URLSearchParams(location.search); fn(p); p.delete('tab'); const q = p.toString(); history.pushState({}, '', location.pathname + (q ? '?' + q : '')); };
+  hubShow = function (tab, push) {
+    _hs(tab);
+    if (push !== false) setQs(p => { tab === 'home' ? p.delete('page') : p.set('page', tab); p.delete('n'); });
+  };
+
+  // ---------- hub news: clickable, with links ----------
+  let pendingN = new URLSearchParams(location.search).get('n');
+  hubRenderNews = function () {
+    const posts = (mtAllPosts || []).filter(p => MT_NEWS_RE.test(p.name || ''));
+    const card = p => {
+      const pid = p.slug || p.id;
+      const img = (p.images && p.images[0]) ? '<img src="' + esc(p.images[0]) + '" alt="" loading="lazy" />' : '<div class="ph">&#8499;</div>';
+      const date = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+      return '<div class="hub-news-card" style="cursor:pointer;" onclick="hubOpenNews(\'' + esc(pid) + '\')">' + img + '<div class="body"><h4>' + esc((p.name || '').replace(MT_NEWS_RE, '')) + '</h4><div class="date">' + esc(date) + '</div><p style="display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">' + emojifyCustom(linkify(p.description || '')) + '</p></div></div>';
+    };
+    const empty = '<div class="hub-empty" style="grid-column:1/-1;">No Montresique announcements yet.</div>';
+    document.getElementById('hub-news-grid').innerHTML = posts.length ? posts.map(card).join('') : empty;
+    document.getElementById('hub-news-home').innerHTML = posts.length ? posts.slice(0, 3).map(card).join('') : empty;
+    if (pendingN) { const n = pendingN; pendingN = null; window.hubOpenNews(n, false); }
+  };
+  window.hubOpenNews = function (postId, push) {
+    const p = (mtAllPosts || []).find(x => (x.slug || x.id) === postId);
+    if (!p) return;
+    const pid = p.slug || p.id, title = (p.name || '').replace(MT_NEWS_RE, '');
+    const imgs = (p.images || []).map(i => '<img src="' + esc(i) + '" alt="" loading="lazy" />').join('');
+    const ds = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+    document.getElementById('news-modal-box').innerHTML =
+      '<button class="modal-close" onclick="closeNewsModal()">&times;</button><div class="modal-title">' + esc(title) + '</div>' +
+      (ds ? '<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">' + esc(ds) + '</div>' : '') +
+      (imgs ? '<div class="news-modal-images">' + imgs + '</div>' : '') +
+      '<div class="news-modal-desc">' + emojifyCustom(linkify(p.description || '')) + '</div><div id="news-reactions-' + esc(pid) + '" class="reaction-bar-wrap"></div>';
+    document.getElementById('news-modal').classList.add('open');
+    loadNewsReactions(pid);
+    setMetaTags({ title: title + ' \u2014 Montresique News', description: (p.description || '').slice(0, 200), image: (p.images || [])[0] || null, url: location.origin + location.pathname + '?page=news&n=' + encodeURIComponent(pid) });
+    if (push !== false) setQs(q => { q.set('page', 'news'); q.set('n', pid); });
+  };
+  const _close = closeNewsModal;
+  closeNewsModal = function (push) {
+    _close(false);
+    if (push !== false && new URLSearchParams(location.search).get('n')) setQs(q => q.delete('n'));
+  };
+
+  // ---------- open the right tab/post from the URL, and on back/forward ----------
+  function applyUrl() {
+    const p = new URLSearchParams(location.search);
+    const pg = p.get('page') || 'home';
+    if (document.getElementById('hubview-' + pg) && p.get('tab') !== 'admin') _hs(pg);
+    const n = p.get('n');
+    if (n) window.hubOpenNews(n, false);
+    else document.getElementById('news-modal').classList.remove('open');
+  }
+  window.addEventListener('popstate', () => setTimeout(applyUrl, 0));
+  const first = new URLSearchParams(location.search).get('page');
+  if (first && document.getElementById('hubview-' + first)) _hs(first);
+})();
+</script>
+<!-- adm-addr -->
 </body>
 
 </html>
