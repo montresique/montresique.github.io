@@ -12,7 +12,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" id="meta-og-title" content="Montresique" />
   <meta property="og:description" id="meta-og-description"
-    content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
+    content="Montresique is an organization primarily based on making videogames and improving player experience for other videogames via plugin software or skilled use of game mechanics." />
   <meta property="og:image" id="meta-og-image" content="assets/logo.png" />
   <meta property="og:url" id="meta-og-url" content="https://montresique.github.io/" />
   <meta property="og:site_name" content="Montresique" />
@@ -21,9 +21,10 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" id="meta-twitter-title" content="Montresique" />
   <meta name="twitter:description" id="meta-twitter-description"
-    content="An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features." />
+    content="Montresique is an organization primarily based on making videogames and improving player experience for other videogames via plugin software or skilled use of game mechanics." />
   <meta name="twitter:image" id="meta-twitter-image" content="assets/logo.png" />
-  <title id="page-title">Montresique [&#8499;]</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('tab');if(p.get('view')==='mc'||p.get('server')||p.get('post')||(t&&t!=='home'&&t!=='admin')){p.delete('view');var q=p.toString();location.replace('multicraft.html'+(q?'?'+q:''));}})();</script>
+  <title id="page-title">Montresique</title>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-YK271DYK8T"></script>
   <script>
@@ -2217,10 +2218,107 @@
       padding: 0.5rem;
       text-align: center;
     }
+
+    /* ═════════ MONTRESIQUE HUB (blue & black) ═════════ */
+    body[data-view="hub"] {
+      --bg: #020611; --card: #07122b; --card2: #0b1b3d;
+      --violet: #4da3ff; --violet-d: #1f6feb; --cyan: #5ee7ff;
+      --text: #e6efff; --muted: #7f95bd; --border: rgba(77, 163, 255, 0.18);
+    }
+    body[data-view="hub"] > nav, body[data-view="hub"] .page:not(#page-admin),
+    body[data-view="hub"] #chat-widget, body[data-view="hub"] #chat-widget-tab { display: none !important; }
+    body[data-view="mc"] #hub { display: none; }
+    body[data-view="hub"] #nav-admin, body[data-view="mc"] #nav-admin { display: none !important; }
+    #hub { min-height: 100vh; background: radial-gradient(1100px 600px at 70% -10%, rgba(31,111,235,.28), transparent 60%), radial-gradient(800px 500px at -10% 40%, rgba(77,163,255,.10), transparent 60%), #020611; }
+    .hub-nav { position: sticky; top: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; padding: .7rem 2rem; background: rgba(2,6,17,.88); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
+    .hub-logo { font-size: 1.25rem; color: #4da3ff; letter-spacing: .06em; cursor: pointer; text-shadow: 0 0 18px rgba(77,163,255,.5); }
+    .hub-logo span { color: #fff; }
+    .hub-tabs { display: flex; gap: .25rem; flex-wrap: wrap; }
+    .hub-tabs button, .hub-btn { font-family: 'MultiCraftFont', monospace; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; background: none; border: 1px solid transparent; color: var(--muted); padding: .45rem .9rem; border-radius: 6px; cursor: pointer; transition: all .2s; }
+    .hub-tabs button:hover { color: #fff; background: rgba(77,163,255,.08); }
+    .hub-tabs button.active { color: #4da3ff; background: rgba(77,163,255,.12); border-color: var(--border); }
+    .hub-btn { color: #fff; background: #1f6feb; border-color: #1f6feb; text-decoration: none; display: inline-block; }
+    .hub-btn:hover { background: #3b86ff; box-shadow: 0 0 18px rgba(59,134,255,.45); }
+    .hub-btn.ghost { background: transparent; color: #4da3ff; border-color: var(--border); }
+    .hub-btn.ghost:hover { background: rgba(77,163,255,.1); }
+    #hub-admin-btn { display: none; background: #000; border: 1px solid #4da3ff; color: #4da3ff; }
+    #hub-admin-btn.on { display: inline-block; }
+    .hub-view { display: none; max-width: 1100px; margin: 0 auto; padding: 3.5rem 2rem 4rem; }
+    .hub-view.active { display: block; }
+    .hub-eyebrow { color: #4da3ff; font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 1rem; }
+    .hub-title { font-size: clamp(2.4rem, 7vw, 4.6rem); color: #fff; line-height: 1.05; margin-bottom: 1.2rem; text-shadow: 0 0 40px rgba(31,111,235,.55); }
+    .hub-title b { color: #4da3ff; font-weight: normal; }
+    .hub-lead { max-width: 640px; color: var(--muted); line-height: 1.7; font-size: 1rem; margin-bottom: 2rem; }
+    .hub-h2 { font-size: 1.5rem; color: #fff; margin: 3rem 0 1.2rem; }
+    .hub-h2 small { display: block; font-size: .72rem; color: #4da3ff; letter-spacing: .2em; margin-bottom: .4rem; }
+    .div-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+    .div-card { position: relative; background: linear-gradient(160deg, #0a1a3b, #050d20); border: 1px solid var(--border); border-radius: 12px; padding: 1.4rem; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; }
+    .div-card:hover { transform: translateY(-3px); border-color: #4da3ff; box-shadow: 0 8px 30px rgba(31,111,235,.25); }
+    .div-card .num { font-size: .7rem; letter-spacing: .2em; color: #4da3ff; }
+    .div-card h3 { font-weight: normal; font-size: 1.25rem; color: #fff; margin: .5rem 0; }
+    .div-card p { font-size: .82rem; line-height: 1.6; color: var(--muted); }
+    .div-badge { position: absolute; top: 1rem; right: 1rem; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; padding: .2rem .5rem; border-radius: 4px; background: rgba(77,163,255,.15); color: #4da3ff; }
+    .div-card.locked { opacity: .55; }
+    .div-card.locked .div-badge { background: rgba(255,255,255,.07); color: var(--muted); }
+    .div-card.locked:hover { border-color: var(--border); box-shadow: none; transform: none; }
+    .div-card.unlocked .div-badge { background: #1f6feb; color: #fff; }
+    .hub-stats { display: flex; gap: 2.2rem; flex-wrap: wrap; margin-top: 2.5rem; }
+    .hub-stat b { display: block; font-size: 1.8rem; color: #4da3ff; font-weight: normal; }
+    .hub-stat span { font-size: .72rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+    .hub-news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .hub-news-card { background: #06112a; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .hub-news-card img { width: 100%; height: 160px; object-fit: cover; display: block; }
+    .hub-news-card .ph { height: 90px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #4da3ff; background: linear-gradient(135deg, #0b1b3d, #020611); }
+    .hub-news-card .body { padding: 1rem 1.2rem 1.3rem; }
+    .hub-news-card h4 { font-weight: normal; color: #fff; font-size: 1.05rem; margin-bottom: .3rem; }
+    .hub-news-card .date { font-size: .7rem; color: #4da3ff; margin-bottom: .6rem; }
+    .hub-news-card p { font-size: .82rem; color: var(--muted); line-height: 1.6; white-space: pre-wrap; }
+    .hub-empty { color: var(--muted); border: 1px dashed var(--border); border-radius: 10px; padding: 2rem; text-align: center; }
+    .hub-footer { text-align: center; padding: 2rem; color: var(--muted); font-size: .75rem; border-top: 1px solid var(--border); }
+    .hub-footer b { color: #4da3ff; font-weight: normal; }
+    @media (max-width: 640px) { .hub-nav { padding: .6rem 1rem; } .hub-view { padding: 2rem 1.2rem; } }
+      .div-card.soon { cursor: default; }
+    .div-card.soon:hover { transform: none; box-shadow: none; border-color: var(--border); }
+    .div-card.soon .div-badge { background: rgba(255,255,255,.08); color: #fff; letter-spacing: .18em; }
+    .hub-field { display:flex; flex-direction:column; gap:.6rem; }
+    a.div-card { text-decoration:none; display:block; }
+    .div-card .ico { width:38px; height:38px; border-radius:9px; background:#1f6feb; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.1rem; margin-bottom:.7rem; }
+    .logo-img { height: 30px; width: auto; vertical-align: middle; margin-right: .55rem; object-fit: contain; }
+    .hub-hero-logo { width: 110px; height: 110px; object-fit: contain; display: block; margin-bottom: 1.4rem; filter: drop-shadow(0 0 26px rgba(77,163,255,.55)); }
+    .hub-footer .logo-img { height: 22px; display: block; margin: 0 auto .6rem; }
+    .macos-title .logo-img { height: 20px; }
+      .hub-news-card { cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; }
+    .hub-news-card:hover { transform: translateY(-3px); border-color: #4da3ff; box-shadow: 0 8px 30px rgba(31,111,235,.25); }
+    .hub-news-card p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  
+    /* ===== Admin panel rework ===== */
+    #page-admin .macos-panel { width: 1120px; height: 760px; max-height: 92vh; background: rgba(5, 12, 30, .94); border: 1px solid rgba(77,163,255,.28); border-radius: 16px; }
+    #page-admin .macos-titlebar { height: 52px; background: rgba(2, 6, 17, .7); }
+    #page-admin .macos-title { color: #fff; font-size: .8rem; letter-spacing: .14em; }
+    #page-admin .macos-sidebar { width: 240px; padding: 18px 12px; gap: 4px; background: rgba(2, 6, 17, .55); }
+    #page-admin .macos-sidebar-item { padding: 10px 14px; border-radius: 8px; font-size: .84rem; border-left: 3px solid transparent; }
+    #page-admin .macos-sidebar-item.active { border-left-color: var(--violet); background: rgba(77,163,255,.14); }
+    .adm-side-title { font-size: .66rem; letter-spacing: .22em; text-transform: uppercase; color: var(--violet); padding: 14px 14px 6px; }
+    .adm-back { font-size: .78rem; color: var(--muted); cursor: pointer; padding: 8px 14px; border-radius: 8px; }
+    .adm-back:hover { color: #fff; background: rgba(77,163,255,.08); }
+    #page-admin .macos-content-pane { padding: 32px 36px; background: transparent; }
+    #page-admin .section-title { font-size: 1.7rem; margin-bottom: .6rem; }
+    #page-admin .section-sub { color: var(--violet); font-size: .74rem; letter-spacing: .18em; margin-top: 1.8rem; }
+    #page-admin .leader-card { border-radius: 12px; background: rgba(11,27,61,.55); }
+    #page-admin .macos-tab-content { max-width: 880px; }
+    .adm-greeting { font-size: clamp(1.8rem, 4vw, 2.6rem); color: #fff; margin: 1rem 0 .5rem; text-shadow: 0 0 30px rgba(31,111,235,.5); }
+    .adm-greeting b { color: var(--violet); font-weight: normal; }
+    .adm-ask { color: var(--muted); font-size: 1rem; margin-bottom: 2rem; }
+    .adm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
+    .adm-card { text-align: left; font-family: 'MultiCraftFont', monospace; cursor: pointer; color: #fff; background: linear-gradient(160deg, #0a1a3b, #050d20); border: 1px solid var(--border); border-radius: 12px; padding: 1.3rem; transition: transform .2s, border-color .2s, box-shadow .2s; }
+    .adm-card:hover { transform: translateY(-3px); border-color: var(--violet); box-shadow: 0 8px 30px rgba(31,111,235,.25); }
+    .adm-card span { display: block; font-size: 1.05rem; margin-bottom: .4rem; }
+    .adm-card small { color: var(--muted); font-size: .74rem; }
+    .adm-frame { width: 100%; height: 540px; border: 1px solid var(--border); border-radius: 10px; background: #000; }
   </style>
 </head>
 
-<body>
+<body data-view="hub">
 
   <!-- CHAT WIDGET -->
   <div id="chat-widget" class="chat-widget">
@@ -2231,7 +2329,7 @@
 
     <div id="chat-window" class="chat-window" hidden>
       <div class="chat-header">
-        <span class="chat-header-title">ℳontresique <span class="chat-header-title-accent">Chat</span></span>
+        <span class="chat-header-title">ℳontresique MC <span class="chat-header-title-accent">Chat</span></span>
         <div class="chat-header-actions">
           <button id="chat-refresh-btn" class="chat-refresh-btn" aria-label="Refresh" title="Refresh">&#8635;</button>
           <button id="chat-close-btn" class="chat-close-btn" aria-label="Close">&times;</button>
@@ -2260,8 +2358,9 @@
   <button id="chat-widget-tab" class="chat-widget-tab" aria-label="Open chat" title="Chat">&#128172;</button>
 
   <nav>
-    <div class="nav-logo" onclick="showPage('home')">&#8499;<span>ontresique</span></div>
+    <div class="nav-logo" onclick="showPage('home')">&#8499;ontresique <span>MultiCraft</span></div>
     <ul class="nav-links">
+      <li><button onclick="hubShow('home')" id="nav-hub">&#9664; Montresique</button></li>
       <li><button onclick="showPage('home')" id="nav-home" class="active">Home</button></li>
       <li><button onclick="showPage('servers')" id="nav-servers"><span class="nav-dot"
             id="nav-dot"></span>Servers</button></li>
@@ -2278,24 +2377,102 @@
     </div>
   </nav>
 
-  <!-- HOME -->
+
+  <!-- ═════════ MONTRESIQUE HUB ═════════ -->
+  <div id="hub">
+    <div class="hub-nav">
+      <div class="hub-logo" onclick="hubShow('home')"><img class="logo-img" src="assets/logo.png" alt="" onerror="this.remove()" />&#8499;ontresique</div>
+      <div class="hub-tabs">
+        <button id="hubtab-home" class="active" onclick="hubShow('home')">Home</button>
+        <button id="hubtab-divisions" onclick="hubShow('divisions')">Divisions</button>
+        <button id="hubtab-news" onclick="hubShow('news')">News</button>
+        <button id="hubtab-socials" onclick="hubShow('socials')">Socials</button>
+        <button id="hubtab-team" onclick="hubShow('team')">Team</button>
+        <button id="hubtab-programs" onclick="hubShow('programs')">Programs</button>
+        <button id="hubtab-about" onclick="hubShow('about')">About</button>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;">
+        <button class="hub-btn" id="hub-admin-btn" onclick="hubOpenAdmin()">Admin Panel</button>
+        <button class="hub-btn ghost" onclick="hubLogin()" id="hub-login-btn">Login</button>
+        <a class="hub-btn" id="hub-discord-btn" href="#" target="_blank" rel="noopener" onclick="hubDiscordClick(event)">Join Discord</a>
+      </div>
+    </div>
+
+    <div class="hub-view active" id="hubview-home">
+      <img class="hub-hero-logo" src="assets/logo.png" alt="Montresique logo" onerror="this.remove()" />
+      <h1 class="hub-title"><b>&#8499;</b>ontresique</h1>
+      <p class="hub-lead">Montresique is an organization primarily based on making videogames and improving player experience for other videogames via plugin software or skilled use of game mechanics.</p>
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap;">
+        <button class="hub-btn" onclick="hubShow('divisions')">Browse Divisions</button>
+        <button class="hub-btn ghost" onclick="hubShow('news')">Montresique News</button>
+      </div>
+      <div class="hub-h2">Divisions</div>
+      <div class="div-grid" id="hub-div-grid-home"></div>
+      <div class="hub-h2">From Montresique</div>
+      <div class="hub-news-grid" id="hub-news-home"></div>
+
+      <div class="hub-h2"><small>THE PEOPLE</small>Montresique's Team</div>
+      <div class="section-sub" style="margin-top:0;">Leadership</div>
+      <div class="team-grid" id="hub-team-leadership"></div>
+      <div class="section-sub">Members</div>
+      <div class="team-grid" id="hub-team-members"></div>
+
+      <div class="hub-h2"><small>WHAT WE BUILD</small>Programs</div>
+      <div class="programs-grid" id="hub-programs-grid" style="margin-top:0;"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-divisions">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Divisions</h1>
+      <div class="div-grid" id="hub-div-grid"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-news">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Montresique News</h1>
+      <div class="hub-news-grid" id="hub-news-grid"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-socials">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Socials</h1>
+      <div class="div-grid" id="hub-socials-grid"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-team">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Team</h1>
+      <div class="section-sub" style="margin-top:0;">Leadership</div>
+      <div class="team-grid" id="hubtab-team-leadership"></div>
+      <div class="section-sub">Members</div>
+      <div class="team-grid" id="hubtab-team-members"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-programs">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Programs</h1>
+      <div class="programs-grid" id="hubtab-programs-grid" style="margin-top:0;"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-about">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">About Montresique</h1>
+      <p class="hub-lead">Montresique is an organization primarily based on making videogames and improving player experience for other videogames via plugin software or skilled use of game mechanics. Each division has its own team, focus and identity, and all of them share one standard: build it properly, test it deeply, and ship it for the community.</p>
+    </div>
+
+    <div class="hub-footer"><img class="logo-img" src="assets/logo.png" alt="" onerror="this.remove()" /><b>&#8499;</b> Montresique &middot; <span id="hub-year"></span></div>
+  </div>
+
+  <!-- MULTICRAFT HOME -->
   <div class="page active" id="page-home">
     <section class="hero">
       <div class="hero-bg"></div>
       <div class="hero-monogram">&#8499;</div>
       <div class="hero-content">
-        <div class="hero-eyebrow">// MultiCraft Organization</div>
-        <h1 class="hero-title"><span class="accent">&#8499;</span>ontresique</h1>
+        <h1 class="hero-title"><span class="accent">&#8499;</span>ontresique <span class="accent">MultiCraft</span></h1>
         <div class="hero-overview">
-          Montresique is an organization on the game MultiCraft &mdash; Build and Mine (based off Luanti, formerly
-          Minetest)
-          that creates advanced MultiCraft programs, signs people with good skills, publishes the best servers,
-          and researches deep into MultiCraft's hidden features and complex mechanics.
-          Montresique's main server is primarily Unstable Realms.
+          Montresique MultiCraft is the flagship division of Montresique, built around MultiCraft &mdash; Build and
+          Mine (powered by Luanti, formerly Minetest). We engineer advanced programs, recruit standout players,
+          showcase the best servers, and dig into the game's hidden systems. Our home base is Unstable Realms.
         </div>
         <div class="hero-ctas">
           <button class="btn btn-primary" onclick="showPage('servers')">Browse Servers</button>
           <button class="btn btn-outline" onclick="showPage('team')">Meet the Team</button>
+          <button class="btn btn-outline" onclick="hubShow('home')">Montresique Hub</button>
         </div>
       </div>
     </section>
@@ -2303,9 +2480,7 @@
     <hr class="divider" />
 
     <div class="section">
-      <div class="section-label">// What We Do</div>
-      <h2 class="section-title">Montresique</h2>
-      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;">Montresique, what do you do?</p>
+      <h2 class="section-title">What MultiCraft Does</h2>
       <div class="pillars">
         <span class="pillar">Advanced Programs</span>
         <span class="pillar">Servers</span>
@@ -2317,7 +2492,6 @@
     <hr class="divider" />
 
     <div class="section">
-      <div class="section-label">// Leadership</div>
       <h2 class="section-title">Leadership</h2>
       <div class="leadership-grid" id="home-leadership"></div>
     </div>
@@ -2328,20 +2502,17 @@
       <div class="discord-cta-card">
         <div class="discord-cta-text">
           <div class="discord-cta-title">Join the Community</div>
-          <div class="discord-cta-sub">Connect with the Montresique team and players on Discord.</div>
         </div>
         <a class="discord-cta-btn" id="home-discord-btn" href="#" target="_blank" rel="noopener">Join Discord</a>
       </div>
     </div>
 
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-home"></span> &middot; Powered
-      by area12.lol</footer>
+    <footer><span class="mark">&#8499;</span> Montresique MultiCraft &middot; <span id="footer-year-home"></span></footer>
   </div>
 
   <!-- SERVERS (official Montresique servers only) -->
   <div class="page" id="page-servers">
     <div class="servers-header">
-      <div class="section-label">// Server List</div>
       <h2 class="section-title">Montresique's Servers</h2>
       <div class="filter-bar" id="filter-bar-servers"></div>
       <div class="filter-status" id="filter-status-servers"></div>
@@ -2352,18 +2523,13 @@
     <div id="servers-empty" class="empty-state" style="display:none;">No servers found. (If this shows for you, just
       wait for a bit. It will display eventually.)</div>
     <div class="servers-grid" id="servers-grid"></div>
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-servers"></span> &middot;
-      Powered by area12.lol</footer>
+    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-servers"></span></footer>
   </div>
 
   <!-- ALL SERVERS (every server returned by find-nearby-servers, not just official ones) -->
   <div class="page" id="page-allservers">
     <div class="servers-header">
-      <div class="section-label">// Full Server List</div>
       <h2 class="section-title">All Servers</h2>
-          <p style="color:var(--muted);font-size:0.83rem;margin-bottom:0.4rem;">
-        Every server we can currently see &mdash; not just official Montresique servers.
-      </p>
       <div class="filter-bar" id="filter-bar-allservers"></div>
       <div class="filter-status" id="filter-status-allservers"></div>
     </div>
@@ -2372,14 +2538,12 @@
     </div>
     <div id="allservers-empty" class="empty-state" style="display:none;">No servers found.</div>
     <div class="servers-grid" id="allservers-grid"></div>
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-allservers"></span> &middot;
-      Powered by area12.lol</footer>
+    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-allservers"></span></footer>
   </div>
 
   <!-- NEWS -->
   <div class="page" id="page-news">
     <div class="section">
-      <div class="section-label">// Announcements</div>
       <h2 class="section-title">News</h2>
       <div id="news-loading" class="loading-state">
         <div class="spinner"></div>Fetching news&hellip;
@@ -2387,42 +2551,34 @@
       <div id="news-empty" class="empty-state" style="display:none;">No news posts yet.</div>
       <div class="news-grid" id="news-grid"></div>
     </div>
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-news"></span> &middot; Powered
-      by area12.lol</footer>
+    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-news"></span></footer>
   </div>
 
   <!-- TEAM -->
   <div class="page" id="page-team">
     <div class="section">
-      <div class="section-label">// The Organization</div>
       <h2 class="section-title">Montresique's Team</h2>
       <div class="section-sub">Leadership</div>
       <div class="team-grid" id="team-leadership"></div>
       <div class="section-sub">Members</div>
       <div class="team-grid" id="team-members"></div>
     </div>
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-team"></span> &middot; Powered
-      by area12.lol</footer>
+    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-team"></span></footer>
   </div>
 
   <!-- PROGRAMS -->
   <div class="page" id="page-programs">
     <div class="section">
-      <div class="section-label">// Engineering</div>
       <h2 class="section-title">Programs</h2>
-      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:0.5rem;">
-        Montresique Programs to help make your server better!
-      </p>
       <div class="programs-grid" id="programs-grid"></div>
     </div>
-    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-programs"></span> &middot;
-      Powered by area12.lol</footer>
+    <footer><span class="mark">&#8499;</span> Montresique &middot; <span id="footer-year-programs"></span></footer>
   </div>
 
   <div class="page" id="page-admin" onclick="closeAdminPanelOutside(event)">
     <div class="macos-panel" onclick="event.stopPropagation()">
       <div class="macos-titlebar">
-        <div class="macos-title">Montresique Admin Panel</div>
+        <div class="macos-title"><img class="logo-img" src="assets/logo.png" alt="" onerror="this.remove()" />Montresique Admin Panel</div>
       </div>
       <div class="macos-body">
         <div class="macos-sidebar">
@@ -2476,6 +2632,14 @@
             </svg>
             <span>News</span>
           </div>
+          <div class="macos-sidebar-item" data-tab="divisions" onclick="switchAdminTab('divisions')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <span>Divisions</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="socials" onclick="switchAdminTab('socials')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <span>Socials</span>
+          </div>
           <div class="macos-sidebar-item" data-tab="audit" onclick="switchAdminTab('audit')">
             <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
               <path
@@ -2495,7 +2659,6 @@
             <span>Loading admin data&hellip;</span>
           </div>
           <div class="macos-tab-content active" id="admin-tab-analytics">
-            <div class="section-label">// Restricted</div>
             <h2 class="section-title">Admin Settings</h2>
             <div class="section-sub">Analytics</div>
             <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
@@ -2615,6 +2778,7 @@
                 <input class="search-box" type="text" id="news-name" placeholder="Title" style="max-width:none;" />
                 <textarea id="news-desc" placeholder="Description" rows="3"
                   style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
+                <label style="font-size:0.78rem;color:var(--violet);display:flex;gap:0.5rem;align-items:center;cursor:pointer;"><input type="checkbox" id="news-mt-only" /> Montresique-only news (shows on the hub, hidden from MultiCraft news)</label>
                 <div id="news-current-images" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
                 <div style="font-size:0.75rem;color:var(--muted);">Add image(s):</div>
                 <input type="file" id="news-image-file" accept="image/*" multiple
@@ -2629,6 +2793,37 @@
               </div>
             </div>
             <div id="admin-news-list"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-divisions">
+            <div class="section-sub" style="margin-top:0;">Divisions</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;">Built in: Montresique MultiCraft &rarr; multicraft.html</div>
+            <div class="leader-card" style="max-width:520px;margin-bottom:1rem;">
+              <div class="hub-field">
+                <input class="search-box" type="text" id="div-name" placeholder="Division name" style="max-width:none;" />
+                <textarea id="div-desc" rows="2" placeholder="Description" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.55rem 1rem;"></textarea>
+                <select class="filter-select" id="div-html-select" onchange="if(this.value)document.getElementById('div-html').value=this.value"><option value="">Choose an HTML file&hellip;</option></select>
+                <input class="search-box" type="text" id="div-html" placeholder="HTML file or full URL (leave blank = COMING SOON)" style="max-width:none;" />
+                <label style="font-size:0.78rem;color:var(--violet);display:flex;gap:0.5rem;align-items:center;cursor:pointer;"><input type="checkbox" id="div-admin-only" /> Admin only</label>
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="btn btn-primary" id="div-save-btn" onclick="hubSaveDivision()">Add Division</button>
+                  <button class="btn btn-outline" id="div-cancel-btn" style="display:none;" onclick="hubCancelDivisionEdit()">Cancel Edit</button>
+                </div>
+                <div id="div-status" style="font-size:0.75rem;color:var(--muted);"></div>
+              </div>
+            </div>
+            <div id="admin-div-list"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-socials">
+            <div class="section-sub" style="margin-top:0;">Socials</div>
+            <div class="leader-card" style="max-width:520px;margin-bottom:1rem;">
+              <div class="hub-field">
+                <input class="search-box" type="text" id="soc-name" placeholder="Name (YouTube, X, Discord...)" style="max-width:none;" />
+                <input class="search-box" type="text" id="soc-url" placeholder="https://..." style="max-width:none;" />
+                <button class="btn btn-primary" style="align-self:flex-start;" onclick="hubSaveSocial()">Add Social</button>
+                <div id="soc-status" style="font-size:0.75rem;color:var(--muted);"></div>
+              </div>
+            </div>
+            <div id="admin-soc-list"></div>
           </div>
           <div class="macos-tab-content" id="admin-tab-audit">
             <div class="section-sub" style="margin-top:0;">Audit Log</div>
@@ -2714,6 +2909,8 @@
     let chatReactionsCache = {};      // message_id -> [{ emoji, discord_user_id }]
     let reviewReactionsCache = {};    // review_id -> [{ emoji, discord_user_id }]
     let isAdmin = false;
+    let mtAllPosts = [];
+    const MT_NEWS_RE = /^\s*\[montresique\]\s*/i;
     let isLeadership = false; // true only if the logged-in admin's team_members.section === 'leadership'
     let editingMemberId = null;
     let overridesMap = {};
@@ -2872,6 +3069,7 @@
     }
 
     function closeAdminPanel() {
+      if (document.body.dataset.view === 'hub') { hubCloseAdmin(); return; }
       showPage(lastActiveTab, true);
     }
 
@@ -2919,11 +3117,16 @@
 
     // TEAM PAGE
     function renderTeam() {
-      const lg = document.getElementById('team-leadership');
-      const mg = document.getElementById('team-members');
-      lg.innerHTML = ''; mg.innerHTML = '';
-      (siteData.leadership || []).forEach(l => { lg.innerHTML += memberCard(l); });
-      (siteData.team || []).forEach(m => { mg.innerHTML += memberCard(m); });
+      [['team-leadership', 'team-members'],
+       ['hub-team-leadership', 'hub-team-members'],
+       ['hubtab-team-leadership', 'hubtab-team-members']].forEach(([lId, mId]) => {
+        const lg = document.getElementById(lId);
+        const mg = document.getElementById(mId);
+        if (!lg || !mg) return;
+        lg.innerHTML = ''; mg.innerHTML = '';
+        (siteData.leadership || []).forEach(l => { lg.innerHTML += memberCard(l); });
+        (siteData.team || []).forEach(m => { mg.innerHTML += memberCard(m); });
+      });
     }
 
     function memberCard(m) {
@@ -2937,14 +3140,17 @@
 
     // PROGRAMS
     function renderPrograms() {
-      const grid = document.getElementById('programs-grid');
-      grid.innerHTML = '';
-      (siteData.programs || []).forEach(p => {
-        grid.innerHTML += `
-        <div class="program-card">
-          <div class="program-name">${esc(p.name)}</div>
-          <div class="program-desc">${esc(p.description)}</div>
-        </div>`;
+      ['programs-grid', 'hub-programs-grid', 'hubtab-programs-grid'].forEach(id => {
+        const grid = document.getElementById(id);
+        if (!grid) return;
+        grid.innerHTML = '';
+        (siteData.programs || []).forEach(p => {
+          grid.innerHTML += `
+          <div class="program-card">
+            <div class="program-name">${esc(p.name)}</div>
+            <div class="program-desc">${esc(p.description)}</div>
+          </div>`;
+        });
       });
     }
 
@@ -3014,20 +3220,36 @@
       return cached.players.some(p => typeof p === 'object' && (p?.gender || '').toLowerCase() === 'admin');
     }
 
+    let adminCheckSeq = 0, adminPanelLoadedFor = null;
     async function refreshAdminStatus() {
-      isAdmin = false;
-      isLeadership = false;
-      document.getElementById('nav-admin').style.display = 'none';
-      if (!discordUser?.id) return;
+      const seq = ++adminCheckSeq;
+      const navAdmin = document.getElementById('nav-admin');
+      const adminPage = document.getElementById('page-admin');
+      if (!discordUser?.id) {
+        isAdmin = false; isLeadership = false; adminPanelLoadedFor = null;
+        navAdmin.style.display = 'none';
+        adminPage.classList.remove('active', 'window-open');
+        return;
+      }
+      // Don't flip isAdmin to false while re-checking (that made the Admin button flash and could close the panel).
+      let verdict = null; // null = couldn't tell (network/server hiccup) -> keep the previous answer
       try {
         const res = await fetch(SUPABASE_URL + '/rest/v1/team_members?select=roles,section&discord_id=eq.' + encodeURIComponent(discordUser.id), { headers: SUPABASE_HEADERS });
-        const rows = res.ok ? await res.json() : [];
-        isAdmin = !!rows[0] && (rows[0].roles || []).length > 0;
-        isLeadership = isAdmin && rows[0].section === 'leadership';
+        if (res.ok) {
+          const rows = await res.json();
+          const admin = !!rows[0] && (rows[0].roles || []).length > 0;
+          verdict = { admin, lead: admin && rows[0].section === 'leadership' };
+        }
       } catch (e) { console.error(e); }
-      document.getElementById('nav-admin').style.display = isAdmin ? '' : 'none';
-      if (isAdmin) loadAdminPanel();
-      else if (document.getElementById('page-admin').classList.contains('active')) showPage('home');
+      if (seq !== adminCheckSeq) return; // a newer check superseded this one
+      if (verdict) { isAdmin = verdict.admin; isLeadership = verdict.lead; }
+      navAdmin.style.display = isAdmin ? '' : 'none';
+      if (isAdmin) {
+        if (adminPanelLoadedFor !== discordUser.id) { adminPanelLoadedFor = discordUser.id; loadAdminPanel(); }
+      } else {
+        adminPanelLoadedFor = null;
+        adminPage.classList.remove('active', 'window-open');
+      }
       if (chatOpen) loadChatMessages();
       if (currentModalServerId) renderReviewsSection(currentModalServerId, 'reviews-section-' + currentModalServerId);
       else renderReviewFormState();
@@ -3648,7 +3870,7 @@
     // Getting crawler-visible per-post previews requires server-side rendering
     // (e.g. an edge function), which is a separate, bigger change from this file.
     const DEFAULT_META = {
-      title: 'Montresique [\u2133]',
+      title: 'Montresique',
       ogTitle: 'Montresique',
       description: "An organization on the game MultiCraft — Build and Mine, creating advanced programs, signing skilled players, publishing top servers, and researching MultiCraft's hidden features.",
       image: new URL('assets/logo.png', location.href).href,
@@ -3681,8 +3903,9 @@
       const emptyEl = document.getElementById('news-empty');
       try {
         const res = await fetch(SUPABASE_URL + '/rest/v1/news_posts?select=*&published=eq.true&order=created_at.desc', { headers: SUPABASE_HEADERS });
-        newsPosts = res.ok ? (await res.json()).map(p => ({ id: p.slug || p.id, name: p.name, description: p.description, images: p.images || [], created_at: p.created_at })) : [];
-        newsLoaded = true;
+        mtAllPosts = res.ok ? await res.json() : [];
+        newsPosts = res.ok ? mtAllPosts.filter(p => !MT_NEWS_RE.test(p.name || '')).map(p => ({ id: p.slug || p.id, name: p.name, description: p.description, images: p.images || [], created_at: p.created_at })) : [];
+        newsLoaded = true; if (window.hubRenderNews) hubRenderNews();
       } catch (e) {
         console.error('Failed to load news', e);
         newsPosts = [];
@@ -4350,9 +4573,7 @@
       const serverId = params.get('server');
       const postId = params.get('post');
 
-      let targetTab = VALID_TABS.includes(tab) ? tab : 'home';
-      if (targetTab === 'admin' && !isAdmin) targetTab = 'home';
-      showPage(targetTab, false);
+      if (tab === 'admin') { hubAdminWanted = true; if (isAdmin) showPage('admin', false); }
 
       if (serverId) {
         const pool = [...allServers, ...allServersFull];
@@ -4374,6 +4595,229 @@
     }
 
     window.addEventListener('popstate', () => route(false));
+
+
+    // ═════════ MONTRESIQUE HUB LOGIC ═════════
+    let hubAdminWanted = false, hubDivisions = [], hubSocials = [], hubDataMissing = false, editingDivId = null;
+    const HUB_REPO = 'montresique/montresique.github.io'; // used to list .html files in the admin "Choose an HTML file" dropdown
+    const MC_DIVISION = { id: 'multicraft', name: 'Montresique MultiCraft', description: 'Servers, programs, team and research for MultiCraft \u2014 Build and Mine.', html_url: 'multicraft.html', admin_only: false };
+    const hubHttp = u => /^https?:\/\/\S+$/i.test(u || '') ? u : '';
+    const hubHtmlTarget = u => (/^https?:\/\/\S+$/i.test(u || '') || /^[\w\-./]+\.html?(\?[\w=&\-]*)?$/i.test(u || '')) ? u : '';
+    const hubSetStatus = (id, msg) => { const el = document.getElementById(id); if (el) el.textContent = msg || ''; };
+
+    const DISCORD_INVITE = ''; // optional: paste a fixed invite here; otherwise the Discord link comes from the Socials tab in the admin panel
+    function hubLogin() {
+      const b = document.getElementById('nav-login-btn');
+      if (b && b.onclick) b.click();
+      else if (!discordUser) startDiscordLogin();
+    }
+    function hubDiscordUrl() {
+      if (hubHttp(DISCORD_INVITE)) return DISCORD_INVITE;
+      const s = hubSocials.find(x => /discord\.(gg|com)/i.test(x.url || '')) || hubSocials.find(x => /discord/i.test(x.name || '') && hubHttp(x.url));
+      return s ? hubHttp(s.url) : '';
+    }
+    function hubApplyDiscord() {
+      const b = document.getElementById('hub-discord-btn'), u = hubDiscordUrl();
+      b.style.display = '';
+      b.href = u || '#';
+    }
+    function hubDiscordClick(e) {
+      if (hubDiscordUrl()) return;
+      e.preventDefault();
+      if (isAdmin) { hubOpenAdmin(); switchAdminTab('socials'); hubSetStatus('soc-status', 'Add a social named Discord with your invite link and the Join Discord button will work everywhere.'); }
+      else alert('The Discord invite has not been set up yet. Check back soon!');
+    }
+    // Coming soon detection: a division is "coming soon" if it has no HTML, or its HTML can't be found.
+    let hubHtmlMissing = {};
+    const hubIsCross = u => /^https?:/i.test(u) && new URL(u).origin !== location.origin;
+    async function hubCheckAll() {
+      const targets = [...new Set([MC_DIVISION, ...hubDivisions].map(d => hubHtmlTarget(d.html_url)).filter(Boolean))];
+      await Promise.all(targets.map(async t => {
+        try {
+          if (hubIsCross(t)) { await fetch(t, { mode: 'no-cors', cache: 'no-store' }); hubHtmlMissing[t] = false; }
+          else { const r = await fetch(t, { method: 'HEAD', cache: 'no-store' }); hubHtmlMissing[t] = (r.status === 404 || r.status === 410); }
+        } catch (e) { hubHtmlMissing[t] = hubIsCross(t); }
+      }));
+    }
+
+    function hubShow(tab) {
+      document.getElementById('page-admin').classList.remove('active', 'window-open');
+      document.querySelectorAll('.hub-view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.hub-tabs button').forEach(b => b.classList.remove('active'));
+      document.getElementById('hubview-' + tab).classList.add('active');
+      document.getElementById('hubtab-' + tab).classList.add('active');
+      window.scrollTo(0, 0);
+    }
+    function hubOpenAdmin() {
+      if (!isAdmin) return;
+      showPage('admin', false);
+      history.pushState({}, '', location.pathname + '?tab=admin');
+      hubLoadHtmlFiles();
+    }
+    function hubCloseAdmin() {
+      document.getElementById('page-admin').classList.remove('active', 'window-open');
+      history.pushState({}, '', location.pathname);
+    }
+
+    async function hubLoadData() {
+      try {
+        const get = t => fetch(SUPABASE_URL + '/rest/v1/' + t + '?select=*&order=sort_order.asc,created_at.asc', { headers: SUPABASE_HEADERS });
+        const [d, s] = await Promise.all([get('hub_divisions'), get('hub_socials')]);
+        hubDataMissing = !d.ok || !s.ok;
+        hubDivisions = d.ok ? await d.json() : [];
+        hubSocials = s.ok ? await s.json() : [];
+      } catch (e) { console.error(e); hubDataMissing = true; }
+      await hubCheckAll();
+      hubRenderDivisions(); hubRenderSocials(); hubRenderAdminLists(); hubApplyDiscord();
+    }
+
+    function hubRenderDivisions() {
+      const all = [MC_DIVISION, ...hubDivisions];
+      const html = all.map(d => {
+        const locked = d.admin_only && !isAdmin;
+        const target = hubHtmlTarget(d.html_url);
+        const soon = !target || hubHtmlMissing[target];
+        const badge = locked ? 'Restricted' : (soon ? 'COMING SOON' : (d.admin_only ? 'Admin access' : ''));
+        const cls = locked ? 'locked' : (soon ? 'soon' : (d.admin_only ? 'unlocked' : ''));
+        const click = (locked || soon) ? '' : `onclick="location.href='${esc(target)}'"`;
+        return `<div class="div-card ${cls}" ${click}>${badge ? `<span class="div-badge">${badge}</span>` : ''}<h3>${esc(d.name)}</h3><p>${esc(d.description || '')}</p></div>`;
+      }).join('');
+      ['hub-div-grid', 'hub-div-grid-home'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+    }
+    function hubRenderSocials() {
+      const el = document.getElementById('hub-socials-grid');
+      if (!el) return;
+      const list = hubSocials.filter(x => hubHttp(x.url));
+      el.innerHTML = list.length ? list.map(x => {
+        let host = ''; try { host = new URL(x.url).hostname.replace(/^www\./, ''); } catch (e) { }
+        return `<a class="div-card" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer"><div class="ico">${esc((x.name || '?').charAt(0).toUpperCase())}</div><h3>${esc(x.name)}</h3><p>${esc(host)}</p></a>`;
+      }).join('') : '<div class="hub-empty" style="grid-column:1/-1;">No socials added yet.</div>';
+    }
+    function hubRenderNews() {
+      const posts = (mtAllPosts || []).filter(p => MT_NEWS_RE.test(p.name || ''));
+      const card = p => {
+        const pid = p.slug || p.id;
+        const img = (p.images && p.images[0]) ? `<img src="${esc(p.images[0])}" alt="" loading="lazy" />` : '<div class="ph">&#8499;</div>';
+        const date = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+        return `<div class="hub-news-card" onclick="hubOpenNews('${esc(pid)}')">${img}<div class="body"><h4>${esc((p.name || '').replace(MT_NEWS_RE, ''))}</h4><div class="date">${esc(date)}</div><p>${emojifyCustom(linkify(p.description || ''))}</p></div></div>`;
+      };
+      const empty = '<div class="hub-empty" style="grid-column:1/-1;">No Montresique announcements yet.</div>';
+      document.getElementById('hub-news-grid').innerHTML = posts.length ? posts.map(card).join('') : empty;
+      document.getElementById('hub-news-home').innerHTML = posts.length ? posts.slice(0, 3).map(card).join('') : empty;
+    }
+
+    function hubOpenNews(postId) {
+      const p = (mtAllPosts || []).find(x => (x.slug || x.id) === postId);
+      if (!p) return;
+      const pid = p.slug || p.id;
+      const imagesHtml = (p.images || []).map(img => `<img src="${esc(img)}" alt="" loading="lazy" />`).join('');
+      const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+      document.getElementById('news-modal-box').innerHTML = `
+        <button class="modal-close" onclick="closeNewsModal()">&times;</button>
+        <div class="modal-title">${esc((p.name || '').replace(MT_NEWS_RE, ''))}</div>
+        ${dateStr ? `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">${esc(dateStr)}</div>` : ''}
+        ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
+        <div class="news-modal-desc">${emojifyCustom(linkify(p.description || ''))}</div>
+        <div id="news-reactions-${esc(pid)}" class="reaction-bar-wrap"></div>`;
+      document.getElementById('news-modal').classList.add('open');
+      loadNewsReactions(pid);
+    }
+
+    // ── Admin: divisions & socials ──
+    const hubRowStyle = 'display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.4rem;font-size:0.8rem;gap:0.6rem;';
+    function hubRenderAdminLists() {
+      const missing = '<div style="color:var(--red);font-size:0.8rem;">Tables not found. Run setup.sql in the Supabase SQL Editor, then reload.</div>';
+      const dl = document.getElementById('admin-div-list'), sl = document.getElementById('admin-soc-list');
+      if (dl) dl.innerHTML = hubDataMissing ? missing : (hubDivisions.map(d => `<div style="${hubRowStyle}"><span>${esc(d.name)} <span style="color:var(--muted);">&middot; ${d.html_url ? esc(d.html_url) : 'COMING SOON'}${d.admin_only ? ' &middot; admin only' : ''}</span></span><span style="display:flex;gap:0.4rem;flex-shrink:0;"><button class="players-btn" onclick="hubEditDivision('${esc(d.id)}')">Edit</button><button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="hubDeleteDivision('${esc(d.id)}')">Delete</button></span></div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No extra divisions yet.</div>');
+      if (sl) sl.innerHTML = hubDataMissing ? missing : (hubSocials.map(x => `<div style="${hubRowStyle}"><span>${esc(x.name)} <span style="color:var(--muted);">&middot; ${esc(x.url)}</span></span><button class="players-btn" style="border-color:rgba(255,68,102,0.4);color:var(--red);" onclick="hubDeleteSocial('${esc(x.id)}')">Delete</button></div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">No socials yet.</div>');
+    }
+    async function hubSaveDivision() {
+      const name = document.getElementById('div-name').value.trim();
+      const description = document.getElementById('div-desc').value.trim();
+      const html_url = document.getElementById('div-html').value.trim();
+      const admin_only = document.getElementById('div-admin-only').checked;
+      if (!name) return hubSetStatus('div-status', 'Name is required.');
+      if (html_url && !hubHtmlTarget(html_url)) return hubSetStatus('div-status', 'Choose an .html file or enter a full https:// URL (or leave blank for COMING SOON).');
+      try {
+        const body = JSON.stringify({ name, description, html_url, admin_only });
+        if (editingDivId) await adminRest('hub_divisions?id=eq.' + editingDivId, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body });
+        else await adminRest('hub_divisions', { method: 'POST', headers: { Prefer: 'return=minimal' }, body });
+        logAdminAction(editingDivId ? 'Updated division' : 'Added division', name);
+        hubCancelDivisionEdit(); hubSetStatus('div-status', 'Saved.');
+        hubLoadData();
+      } catch (e) { console.error(e); hubSetStatus('div-status', 'Could not save: ' + e.message); }
+    }
+    function hubEditDivision(id) {
+      const d = hubDivisions.find(x => x.id === id); if (!d) return;
+      editingDivId = id;
+      document.getElementById('div-name').value = d.name || '';
+      document.getElementById('div-desc').value = d.description || '';
+      document.getElementById('div-html').value = d.html_url || '';
+      document.getElementById('div-admin-only').checked = !!d.admin_only;
+      document.getElementById('div-save-btn').textContent = 'Update Division';
+      document.getElementById('div-cancel-btn').style.display = '';
+    }
+    function hubCancelDivisionEdit() {
+      editingDivId = null;
+      ['div-name', 'div-desc', 'div-html'].forEach(i => document.getElementById(i).value = '');
+      document.getElementById('div-admin-only').checked = false;
+      document.getElementById('div-save-btn').textContent = 'Add Division';
+      document.getElementById('div-cancel-btn').style.display = 'none';
+    }
+    async function hubDeleteDivision(id) {
+      if (!confirm('Delete this division?')) return;
+      try { await adminRest('hub_divisions?id=eq.' + id, { method: 'DELETE' }); logAdminAction('Deleted division', id); hubLoadData(); }
+      catch (e) { console.error(e); alert('Could not delete: ' + e.message); }
+    }
+    async function hubSaveSocial() {
+      const name = document.getElementById('soc-name').value.trim();
+      const url = document.getElementById('soc-url').value.trim();
+      if (!name) return hubSetStatus('soc-status', 'Name is required.');
+      if (!hubHttp(url)) return hubSetStatus('soc-status', 'Enter a full link starting with https://');
+      try {
+        await adminRest('hub_socials', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name, url }) });
+        logAdminAction('Added social', name);
+        document.getElementById('soc-name').value = ''; document.getElementById('soc-url').value = '';
+        hubSetStatus('soc-status', 'Saved.'); hubLoadData();
+      } catch (e) { console.error(e); hubSetStatus('soc-status', 'Could not save: ' + e.message); }
+    }
+    async function hubDeleteSocial(id) {
+      if (!confirm('Delete this social?')) return;
+      try { await adminRest('hub_socials?id=eq.' + id, { method: 'DELETE' }); logAdminAction('Deleted social', id); hubLoadData(); }
+      catch (e) { console.error(e); alert('Could not delete: ' + e.message); }
+    }
+    let hubHtmlLoaded = false;
+    async function hubLoadHtmlFiles() {
+      if (hubHtmlLoaded) return;
+      try {
+        const res = await fetch('https://api.github.com/repos/' + HUB_REPO + '/contents');
+        if (!res.ok) return;
+        const files = (await res.json()).filter(f => f.type === 'file' && /\.html?$/i.test(f.name) && f.name !== 'index.html');
+        const sel = document.getElementById('div-html-select');
+        files.forEach(f => { const o = document.createElement('option'); o.value = f.name; o.textContent = f.name; sel.appendChild(o); });
+        hubHtmlLoaded = true;
+      } catch (e) { console.warn('Could not list HTML files', e); }
+    }
+
+    function hubSync() {
+      const on = document.getElementById('nav-admin')?.style.display !== 'none' && isAdmin;
+      document.getElementById('hub-admin-btn').classList.toggle('on', !!on);
+      hubRenderDivisions();
+      if (on && hubAdminWanted) { hubAdminWanted = false; showPage('admin', false); hubLoadHtmlFiles(); }
+    }
+    (function hubInit() {
+      document.getElementById('hub-year').textContent = new Date().getFullYear();
+      const _sw = switchAdminTab;
+      switchAdminTab = function (t) { _sw(t); if (t === 'divisions' || t === 'socials') { hubRenderAdminLists(); hubLoadHtmlFiles(); } };
+      new MutationObserver(hubSync).observe(document.getElementById('nav-admin'), { attributes: true, attributeFilter: ['style'] });
+      const mirror = () => {
+        const l = document.getElementById('nav-login-btn'), hl = document.getElementById('hub-login-btn');
+        if (l && hl) hl.innerHTML = l.innerHTML;
+      };
+      mirror();
+      new MutationObserver(mirror).observe(document.getElementById('nav-login-btn'), { childList: true, characterData: true, subtree: true });
+      hubLoadData();
+    })();
 
     init();
     route(false);
@@ -4398,7 +4842,12 @@
     }
 
     async function signOut() {
-      await supabaseClient.auth.signOut();
+      // Instant: update the UI first, then revoke the session in the background.
+      document.getElementById('page-admin')?.classList.remove('active', 'window-open');
+      if (/[?&]tab=admin/.test(location.search)) history.replaceState({}, '', location.pathname);
+      userSignedOut = true;
+      applySession(null);
+      try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) { console.warn(e); }
     }
 
     function discordUserFromSession(session) {
@@ -4493,6 +4942,14 @@
       }
     }
 
+    let userSignedOut = false;
+    function showAuthToast(msg) {
+      const t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:3000;background:#111a33;color:#fff;border:1px solid #4da3ff;border-radius:8px;padding:.8rem 1.2rem;font-size:.85rem;max-width:90vw;box-shadow:0 10px 30px rgba(0,0,0,.5);';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 9000);
+    }
     async function initDiscordAuth() {
       // onAuthStateChange fires once immediately with the current session (event
       // 'INITIAL_SESSION') AND handles the OAuth redirect hash parsing itself,
@@ -4500,6 +4957,11 @@
       // separate getSession() call — this was the cause of the "stuck loading"
       // bug, since getSession() could resolve before the redirect hash was parsed.
       supabaseClient.auth.onAuthStateChange((_event, session) => {
+        console.info('[auth]', _event, session ? 'session present' : 'no session');
+        if (!session && _event === 'SIGNED_OUT' && discordUser && !userSignedOut) {
+          showAuthToast('You were signed out (your login session expired or was revoked). Click Login to sign in again.');
+        }
+        userSignedOut = false;
         applySession(session);
       });
 
@@ -5173,8 +5635,10 @@
     async function uploadNewsImages(files) {
       const urls = [];
       const status = document.getElementById('news-upload-status');
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      let { data: sessionData } = await supabaseClient.auth.getSession();
+      let token = sessionData?.session?.access_token;
+      if (!token) { const r = await supabaseClient.auth.refreshSession(); token = r?.data?.session?.access_token; }
+      if (!token || token.split('.').length !== 3) throw new Error('You are logged out on this site (login sessions are per domain). Click Login, sign in with Discord, then try again.');
       for (const file of files) {
         status.textContent = `Uploading ${file.name}…`;
         const path = `news/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
@@ -5208,7 +5672,8 @@
     }
 
     async function createNewsPost() {
-      const name = document.getElementById('news-name').value.trim();
+      let name = document.getElementById('news-name').value.trim();
+      if (document.getElementById('news-mt-only')?.checked && name && !MT_NEWS_RE.test(name)) name = '[Montresique] ' + name;
       const description = document.getElementById('news-desc').value.trim();
       const fileInput = document.getElementById('news-image-file');
       if (!name) return alert('Title is required.');
@@ -5236,7 +5701,8 @@
       if (!p) return;
       editingNewsId = id;
       editingNewsImages = [...(p.images || [])];
-      document.getElementById('news-name').value = p.name || '';
+      document.getElementById('news-name').value = (p.name || '').replace(MT_NEWS_RE, '');
+      const mtc = document.getElementById('news-mt-only'); if (mtc) mtc.checked = MT_NEWS_RE.test(p.name || '');
       document.getElementById('news-desc').value = p.description || '';
       document.getElementById('news-image-file').value = '';
       renderNewsImagePreview();
@@ -5246,6 +5712,7 @@
     }
 
     function cancelNewsEdit() {
+      const mtc = document.getElementById('news-mt-only'); if (mtc) mtc.checked = false;
       editingNewsId = null;
       editingNewsImages = [];
       document.getElementById('news-name').value = '';
@@ -5547,6 +6014,100 @@
       });
     }
   </script>
+
+<script>
+(function () {
+  const pane = document.querySelector('.macos-content-pane');
+  const side = document.querySelector('.macos-sidebar');
+  const foot = side.lastElementChild.outerHTML;
+
+  // close dot in the title bar
+  document.querySelector('.macos-titlebar').insertAdjacentHTML('afterbegin',
+    '<div class="macos-traffic-lights"><div class="macos-dot macos-close" title="Close" onclick="closeAdminPanel()"></div></div>');
+
+  // split server stats out of the Analytics tab (Analytics keeps Google Analytics)
+  const a = document.getElementById('admin-tab-analytics');
+  const mc = document.createElement('div');
+  mc.className = 'macos-tab-content'; mc.id = 'admin-tab-mcstats';
+  mc.innerHTML = '<h2 class="section-title">Server Stats</h2>';
+  [...a.children].slice(1, 4).forEach(k => mc.appendChild(k));
+  a.after(mc);
+  a.querySelector('.section-title').textContent = 'Analytics';
+  a.classList.remove('active');
+
+  // greeting screen
+  const home = document.createElement('div');
+  home.className = 'macos-tab-content active'; home.id = 'admin-tab-home';
+  pane.appendChild(home);
+
+  const BUILTIN = {
+    mt: { name: 'Montresique', tabs: [['analytics', 'Analytics'], ['team', 'Team Members'], ['users', 'Users'], ['roles', 'Roles'], ['news', 'News'], ['divisions', 'Divisions'], ['socials', 'Socials'], ['audit', 'Audit Log']] },
+    mc: { name: 'Montresique MultiCraft', tabs: [['mcstats', 'Server Stats'], ['moderation', 'Moderation'], ['overrides', 'Server Overrides']] }
+  };
+  let dyn = {}, cur = null;
+  const allDivs = () => Object.assign({}, BUILTIN, dyn);
+
+  // a division only gets a panel if its html declares one
+  async function scan() {
+    const found = {};
+    await Promise.all((typeof hubDivisions !== 'undefined' ? hubDivisions : []).map(async d => {
+      const t = hubHtmlTarget(d.html_url);
+      if (!t || hubIsCross(t)) return;
+      try {
+        const r = await fetch(t, { cache: 'no-store' });
+        if (!r.ok) return;
+        const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+        const s = doc.getElementById('montresique-admin');
+        if (!s) return;
+        const tabs = (JSON.parse(s.textContent).tabs || [])
+          .filter(x => x && x.title && /^[\w\-./]+\.html?(\?[\w=&\-]*)?$/i.test(x.url || ''))
+          .map((x, j) => ['d' + String(d.id).replace(/[^\w-]/g, '') + '-' + j, x.title, x.url]);
+        if (tabs.length) found['d' + d.id] = { name: d.name, tabs };
+      } catch (e) { console.warn('Admin scan failed for', d.name, e); }
+    }));
+    dyn = found;
+  }
+
+  function renderHome() {
+    const who = (typeof discordUser !== 'undefined' && discordUser) ? getDiscordDisplayName(discordUser) : 'Admin';
+    const divs = allDivs();
+    home.innerHTML = '<div class="adm-greeting">Greetings, <b>' + esc(who) + '</b></div>' +
+      '<div class="adm-ask">What are you working on today?</div><div class="adm-grid">' +
+      Object.keys(divs).map(k => '<button class="adm-card" onclick="admOpen(\'' + esc(k) + '\')"><span>' + esc(divs[k].name) + '</span><small>' + divs[k].tabs.length + ' tool' + (divs[k].tabs.length === 1 ? '' : 's') + '</small></button>').join('') + '</div>';
+  }
+
+  window.admGoHome = async function () {
+    cur = null;
+    side.innerHTML = '<div class="adm-side-title">Admin</div><div class="macos-sidebar-item active" onclick="admGoHome()"><span>Home</span></div>' + foot;
+    renderHome();
+    switchAdminTab('home');
+    await scan();
+    if (cur === null) renderHome();
+  };
+
+  window.admOpen = function (k) {
+    const d = allDivs()[k];
+    if (!d) return;
+    cur = k;
+    side.innerHTML = '<div class="adm-back" onclick="admGoHome()">&larr; All divisions</div><div class="adm-side-title">' + esc(d.name) + '</div>' +
+      d.tabs.map(t => '<div class="macos-sidebar-item" data-tab="' + esc(t[0]) + '" onclick="switchAdminTab(\'' + esc(t[0]) + '\')"><span>' + esc(t[1]) + '</span></div>').join('') + foot;
+    d.tabs.forEach(t => {
+      if (t[2] && !document.getElementById('admin-tab-' + t[0])) {
+        const c = document.createElement('div');
+        c.className = 'macos-tab-content'; c.id = 'admin-tab-' + t[0];
+        c.innerHTML = '<h2 class="section-title">' + esc(t[1]) + '</h2><iframe class="adm-frame" src="' + esc(t[2]) + '"></iframe>';
+        pane.appendChild(c);
+      }
+    });
+    switchAdminTab(d.tabs[0][0]);
+  };
+
+  // always open on the greeting screen
+  const _sp = showPage;
+  showPage = function (id, push) { _sp(id, push); if (id === 'admin') admGoHome(); };
+})();
+</script>
+<!-- adm-greeting -->
 </body>
 
 </html>
