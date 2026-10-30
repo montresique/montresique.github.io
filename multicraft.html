@@ -952,6 +952,17 @@
       word-break: break-word;
     }
 
+    .news-md { white-space: normal; }
+    .news-md p { margin: .45rem 0; line-height: 1.7; }
+    .news-md h1, .news-md h2, .news-md h3 { color: #fff; line-height: 1.35; margin: .75rem 0 .35rem; }
+    .news-md h1 { font-size: 1.35em; } .news-md h2 { font-size: 1.2em; } .news-md h3 { font-size: 1.05em; }
+    .news-md-list { margin: .45rem 0 .75rem 1.3rem; padding-left: .9rem; }
+    .news-md-list li { margin: .28rem 0; }
+    .news-md-marker { color: var(--cyan); font-weight: bold; }
+    .news-md hr { border: 0; border-top: 1px solid var(--border); margin: .8rem 0; }
+    .news-spoiler { color: transparent; background: #444; border-radius: 3px; cursor: pointer; padding: 0 .14em; user-select: none; }
+    .news-spoiler.revealed { color: inherit; background: rgba(77,163,255,.2); user-select: text; }
+
     .news-modal-images {
       display: flex;
       flex-direction: column;
@@ -3776,7 +3787,7 @@
         <div class="news-card-body">
           <div class="news-card-title">${esc(p.name)}</div>
           ${dateStr ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">${esc(dateStr)}</div>` : ''}
-          <div class="news-card-desc">${emojifyCustom(linkify(p.description))}</div>
+          <div class="news-card-desc">${emojifyCustom(renderNewsMarkdown(p.description))}</div>
           <div class="reaction-summary" id="news-card-reactions-${esc(p.id)}"></div>
         </div>
       `;
@@ -3860,7 +3871,7 @@
       <div class="modal-title">${esc(p.name)}</div>
       ${dateStr ? `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">${esc(dateStr)}</div>` : ''}
       ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
-      <div class="news-modal-desc">${emojifyCustom(linkify(p.description))}</div>
+      <div class="news-modal-desc">${emojifyCustom(renderNewsMarkdown(p.description))}</div>
       <div id="news-reactions-${esc(p.id)}" class="reaction-bar-wrap"></div>
     `;
       document.getElementById('news-modal').classList.add('open');
@@ -3913,6 +3924,73 @@
         const href = /^https?:\/\//i.test(match) ? match : 'https://' + match;
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${match}</a>${trail}`;
       });
+    }
+
+    function safeNewsHref(rawUrl) {
+      const value = String(rawUrl || '').replace(/&amp;/g, '&').trim();
+      if (!/^(https?:\/\/|mailto:)/i.test(value)) return '';
+      try {
+        const parsed = new URL(value, location.origin);
+        return ['http:', 'https:', 'mailto:'].includes(parsed.protocol) ? parsed.href : '';
+      } catch (e) { return ''; }
+    }
+
+    // Small, safe Markdown subset for changelog/news copy. Raw HTML is escaped
+    // before any markup is generated; links are restricted to http(s)/mailto.
+    // Discord-like mentions such as @everyone are ordinary text on this site.
+    function renderNewsInline(raw) {
+      let html = esc(raw || '');
+      html = html.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)|(https?:\/\/[^\s<]+)/gi,
+        (whole, label, markdownUrl, bareUrl) => {
+          let url = markdownUrl || bareUrl;
+          let trailing = '';
+          if (bareUrl) {
+            const suffix = url.match(/[).,;:!?\]]+$/);
+            if (suffix) { trailing = suffix[0]; url = url.slice(0, -trailing.length); }
+          }
+          const safeHref = safeNewsHref(url);
+          if (!safeHref) return whole;
+          const linkText = label || url;
+          return `<a href="${esc(safeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${linkText}</a>${trailing}`;
+        });
+      html = html.replace(/\|\|([\s\S]+?)\|\|/g,
+        '<span class="news-spoiler" tabindex="0" role="button" aria-label="Spoiler; activate to reveal" onclick="event.stopPropagation();this.classList.toggle(\'revealed\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();this.classList.toggle(\'revealed\')}">$1</span>');
+      html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
+      return html;
+    }
+
+    function renderNewsMarkdown(raw) {
+      const lines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+      const output = [];
+      let paragraph = [];
+      let items = [];
+      const flushParagraph = () => {
+        if (paragraph.length) output.push('<p>' + paragraph.map(renderNewsInline).join('<br>') + '</p>');
+        paragraph = [];
+      };
+      const flushItems = () => {
+        if (items.length) output.push('<ul class="news-md-list">' + items.join('') + '</ul>');
+        items = [];
+      };
+      for (const line of lines) {
+        if (!line.trim()) { flushParagraph(); flushItems(); continue; }
+        if (/^\s*\*?-{3,}\*?\s*$/.test(line)) { flushParagraph(); flushItems(); output.push('<hr />'); continue; }
+        const heading = line.match(/^\s{0,3}(#{1,3})\s+(.+?)\s*#*\s*$/);
+        if (heading) { flushParagraph(); flushItems(); const level = heading[1].length; output.push(`<h${level}>${renderNewsInline(heading[2])}</h${level}>`); continue; }
+        const item = line.match(/^\s*(?:\[([+\-⭐])\]\s*|([-*+])\s+)(.*)$/u);
+        if (item) {
+          flushParagraph();
+          const marker = item[1] ? `<span class="news-md-marker">[${esc(item[1])}]</span> ` : '';
+          items.push(`<li>${marker}${renderNewsInline(item[3])}</li>`);
+          continue;
+        }
+        flushItems();
+        paragraph.push(line);
+      }
+      flushParagraph();
+      flushItems();
+      return '<div class="news-md">' + output.join('') + '</div>';
     }
 
     // ============================================================

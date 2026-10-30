@@ -2277,6 +2277,19 @@
     .hub-footer { text-align: center; padding: 2rem; color: var(--muted); font-size: .75rem; border-top: 1px solid var(--border); }
     .hub-footer b { color: #4da3ff; font-weight: normal; }
     @media (max-width: 640px) { .hub-nav { padding: .6rem 1rem; } .hub-view { padding: 2rem 1.2rem; } }
+    .account-form, .account-card { background: rgba(6,17,42,.82); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin: 1rem 0; }
+    .account-form { max-width: 780px; }
+    .account-field { display: flex; flex-direction: column; gap: .45rem; margin-bottom: 1rem; }
+    .account-field > label, .account-label { color: #dce9ff; font-size: .88rem; }
+    .account-field input, .account-field select, .account-field textarea, .account-form textarea, .account-form input[type="text"], .account-form input[type="file"] { width: 100%; box-sizing: border-box; background: #07122b; border: 1px solid var(--border); border-radius: 7px; color: var(--text); font: .9rem 'MultiCraftFont', monospace; padding: .7rem .8rem; }
+    .account-field textarea { min-height: 100px; resize: vertical; }
+    .account-help { color: var(--muted); font-size: .76rem; line-height: 1.55; }
+    .account-checks { display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: .55rem; margin-top: .4rem; }
+    .account-check { display:flex; gap:.5rem; align-items:center; color:var(--text); background:rgba(77,163,255,.05); border:1px solid var(--border); border-radius:7px; padding:.6rem; font-size:.82rem; }
+    .account-check input { accent-color:#4da3ff; }
+    .account-mail-body { color: var(--text); white-space: pre-wrap; line-height: 1.65; margin-top: .6rem; }
+    .account-status { font-size: .82rem; color: var(--muted); margin: .8rem 0; }
+    .account-status.error { color: #ff6688; }
       .div-card.soon { cursor: default; }
     .div-card.soon:hover { transform: none; box-shadow: none; border-color: var(--border); }
     .div-card.soon .div-badge { background: rgba(255,255,255,.08); color: #fff; letter-spacing: .18em; }
@@ -2291,6 +2304,17 @@
     .hub-news-card:hover { transform: translateY(-3px); border-color: #4da3ff; box-shadow: 0 8px 30px rgba(31,111,235,.25); }
     .hub-news-card p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   
+    .news-md { white-space: normal; }
+    .news-md p { margin: .45rem 0; line-height: 1.7; }
+    .news-md h1, .news-md h2, .news-md h3 { color: #fff; line-height: 1.35; margin: .75rem 0 .35rem; }
+    .news-md h1 { font-size: 1.35em; } .news-md h2 { font-size: 1.2em; } .news-md h3 { font-size: 1.05em; }
+    .news-md-list { margin: .45rem 0 .75rem 1.3rem; padding-left: .9rem; }
+    .news-md-list li { margin: .28rem 0; }
+    .news-md-marker { color: var(--cyan); font-weight: bold; }
+    .news-md hr { border: 0; border-top: 1px solid var(--border); margin: .8rem 0; }
+    .news-spoiler { color: transparent; background: #444; border-radius: 3px; cursor: pointer; padding: 0 .14em; user-select: none; }
+    .news-spoiler.revealed { color: inherit; background: rgba(77,163,255,.2); user-select: text; }
+
     /* ===== Admin panel rework ===== */
     #page-admin .macos-panel { width: 1120px; height: 760px; max-height: 92vh; background: rgba(5, 12, 30, .94); border: 1px solid rgba(77,163,255,.28); border-radius: 16px; }
     #page-admin .macos-titlebar { height: 52px; background: rgba(2, 6, 17, .7); }
@@ -2396,6 +2420,8 @@
         <button id="hubtab-team" onclick="hubShow('team')">Team</button>
         <button id="hubtab-programs" onclick="hubShow('programs')">Programs</button>
         <button id="hubtab-about" onclick="hubShow('about')">About</button>
+        <button id="hubtab-applications" onclick="hubShow('applications')">Staff Applications</button>
+        <button id="hubtab-mail" onclick="hubShow('mail')">Mail</button>
       </div>
       <div style="display:flex;gap:.5rem;align-items:center;">
         <button class="hub-btn" id="hub-admin-btn" onclick="hubOpenAdmin()">Admin Panel</button>
@@ -2458,6 +2484,22 @@
     <div class="hub-view" id="hubview-about">
       <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">About Montresique</h1>
       <p class="hub-lead">Montresique is an organization primarily based on making videogames and improving player experience for other videogames via plugin software or skilled use of game mechanics. Each division has its own team, focus and identity, and all of them share one standard: build it properly, test it deeply, and ship it for the community.</p>
+    </div>
+
+    <div class="hub-view" id="hubview-applications">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Staff Applications</h1>
+      <p class="hub-lead">Apply to join a Montresique division. You must be signed in with your Montresique account. Uploaded work samples are private and visible only to you and staff reviewers.</p>
+      <div id="staff-application-page-status" class="account-status" role="status"></div>
+      <div id="staff-application-form-wrap"></div>
+      <div class="hub-h2" style="margin-top:2rem;">Your Applications</div>
+      <div id="my-staff-applications"></div>
+    </div>
+
+    <div class="hub-view" id="hubview-mail">
+      <h1 class="hub-title" style="font-size:clamp(2rem,5vw,3.2rem)">Mail</h1>
+      <p class="hub-lead">Read private messages from the Montresique development team, including application decisions and account welcome messages.</p>
+      <div id="hub-mail-status" class="account-status" role="status"></div>
+      <div id="hub-mail-list"></div>
     </div>
 
     <div class="hub-footer"><img class="logo-img" src="assets/logo.png" alt="" onerror="this.remove()" /><b>&#8499;</b> Montresique &middot; <span id="hub-year"></span></div>
@@ -2608,6 +2650,14 @@
                 stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <span>Users</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="applications" onclick="switchAdminTab('applications')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24"><path d="M8 4h8M8 8h8M8 12h5m-9 9h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H6L2 7v12a2 2 0 0 0 2 2z" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <span>Staff Applications</span>
+          </div>
+          <div class="macos-sidebar-item" data-tab="mail" onclick="switchAdminTab('mail')">
+            <svg class="macos-sidebar-icon" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 6l9 7 9-7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <span>Mail</span>
           </div>
           <div class="macos-sidebar-item" data-tab="roles" onclick="switchAdminTab('roles')">
             <svg class="macos-sidebar-icon" viewBox="0 0 24 24">
@@ -2830,6 +2880,40 @@
               </div>
             </div>
             <div id="admin-soc-list"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-applications">
+            <div class="section-sub" style="margin-top:0;">Staff Applications</div>
+            <p style="color:var(--muted);font-size:0.8rem;line-height:1.6;">Open or close submissions here. New applications appear below; only admins can review them. Work-sample images are stored privately.</p>
+            <div class="leader-card" style="max-width:680px;margin:1rem 0;padding:1rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" id="staff-application-toggle" type="button" onclick="toggleStaffApplications()">Loading…</button>
+              <span id="staff-application-admin-status" style="font-size:.82rem;color:var(--muted);"></span>
+            </div>
+            <div id="admin-staff-applications-list"></div>
+          </div>
+          <div class="macos-tab-content" id="admin-tab-mail">
+            <div class="section-sub" style="margin-top:0;">Send account Mail</div>
+            <p style="color:var(--muted);font-size:0.8rem;line-height:1.6;">Send a private in-site message to a Montresique account. This does not send email outside the site.</p>
+            <div class="leader-card" style="max-width:650px;margin:1rem 0;padding:1rem;">
+              <div class="hub-field">
+                <label for="admin-mail-recipient" style="font-size:.78rem;color:var(--muted);">Recipient account</label>
+                <select class="filter-select" id="admin-mail-recipient" style="max-width:none;"><option value="">Loading accounts…</option></select>
+                <input class="search-box" type="text" id="admin-mail-subject" maxlength="120" placeholder="Subject" style="max-width:none;" />
+                <textarea id="admin-mail-body" maxlength="5000" rows="5" placeholder="Message" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.7rem .8rem;"></textarea>
+                <button class="btn btn-primary" type="button" onclick="sendAdminMail()" style="align-self:flex-start;">Send Mail</button>
+                <div id="admin-mail-send-status" class="account-status" role="status"></div>
+              </div>
+            </div>
+            <div class="section-sub">Welcome message for new accounts</div>
+            <p style="color:var(--muted);font-size:0.8rem;line-height:1.6;">When enabled, this message is added once to each account’s Montresique Mail inbox the next time they sign in after joining.</p>
+            <div class="leader-card" style="max-width:650px;margin:1rem 0;padding:1rem;">
+              <div class="hub-field">
+                <label style="font-size:.8rem;color:var(--text);display:flex;gap:.5rem;align-items:center;"><input type="checkbox" id="welcome-mail-enabled" /> Enable one-time welcome Mail for new accounts</label>
+                <input class="search-box" type="text" id="welcome-mail-subject" maxlength="120" placeholder="Welcome message subject" style="max-width:none;" />
+                <textarea id="welcome-mail-body" maxlength="5000" rows="5" placeholder="Welcome message" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'MultiCraftFont',monospace;font-size:0.86rem;padding:0.7rem .8rem;"></textarea>
+                <button class="btn btn-primary" type="button" onclick="saveWelcomeMailSettings()" style="align-self:flex-start;">Save Welcome Message</button>
+                <div id="welcome-mail-save-status" class="account-status" role="status"></div>
+              </div>
+            </div>
           </div>
           <div class="macos-tab-content" id="admin-tab-audit">
             <div class="section-sub" style="margin-top:0;">Audit Log</div>
@@ -3233,6 +3317,7 @@
       const adminPage = document.getElementById('page-admin');
       if (!discordUser?.id) {
         isAdmin = false; isLeadership = false; adminPanelLoadedFor = null;
+        stopStaffApplicationsSubscription();
         navAdmin.style.display = 'none';
         adminPage.classList.remove('active', 'window-open');
         return;
@@ -3254,6 +3339,7 @@
         if (adminPanelLoadedFor !== discordUser.id) { adminPanelLoadedFor = discordUser.id; loadAdminPanel(); }
       } else {
         adminPanelLoadedFor = null;
+        stopStaffApplicationsSubscription();
         adminPage.classList.remove('active', 'window-open');
       }
       if (chatOpen) loadChatMessages();
@@ -3946,7 +4032,7 @@
         <div class="news-card-body">
           <div class="news-card-title">${esc(p.name)}</div>
           ${dateStr ? `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">${esc(dateStr)}</div>` : ''}
-          <div class="news-card-desc">${emojifyCustom(linkify(p.description))}</div>
+          <div class="news-card-desc">${emojifyCustom(renderNewsMarkdown(p.description))}</div>
           <div class="reaction-summary" id="news-card-reactions-${esc(p.id)}"></div>
         </div>
       `;
@@ -4030,7 +4116,7 @@
       <div class="modal-title">${esc(p.name)}</div>
       ${dateStr ? `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">${esc(dateStr)}</div>` : ''}
       ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
-      <div class="news-modal-desc">${emojifyCustom(linkify(p.description))}</div>
+      <div class="news-modal-desc">${emojifyCustom(renderNewsMarkdown(p.description))}</div>
       <div id="news-reactions-${esc(p.id)}" class="reaction-bar-wrap"></div>
     `;
       document.getElementById('news-modal').classList.add('open');
@@ -4083,6 +4169,73 @@
         const href = /^https?:\/\//i.test(match) ? match : 'https://' + match;
         return `<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${match}</a>${trail}`;
       });
+    }
+
+    function safeNewsHref(rawUrl) {
+      const value = String(rawUrl || '').replace(/&amp;/g, '&').trim();
+      if (!/^(https?:\/\/|mailto:)/i.test(value)) return '';
+      try {
+        const parsed = new URL(value, location.origin);
+        return ['http:', 'https:', 'mailto:'].includes(parsed.protocol) ? parsed.href : '';
+      } catch (e) { return ''; }
+    }
+
+    // Small, safe Markdown subset for changelog/news copy. Raw HTML is escaped
+    // before any markup is generated; links are restricted to http(s)/mailto.
+    // Discord-like mentions such as @everyone are ordinary text on this site.
+    function renderNewsInline(raw) {
+      let html = esc(raw || '');
+      html = html.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)|(https?:\/\/[^\s<]+)/gi,
+        (whole, label, markdownUrl, bareUrl) => {
+          let url = markdownUrl || bareUrl;
+          let trailing = '';
+          if (bareUrl) {
+            const suffix = url.match(/[).,;:!?\]]+$/);
+            if (suffix) { trailing = suffix[0]; url = url.slice(0, -trailing.length); }
+          }
+          const safeHref = safeNewsHref(url);
+          if (!safeHref) return whole;
+          const linkText = label || url;
+          return `<a href="${esc(safeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${linkText}</a>${trailing}`;
+        });
+      html = html.replace(/\|\|([\s\S]+?)\|\|/g,
+        '<span class="news-spoiler" tabindex="0" role="button" aria-label="Spoiler; activate to reveal" onclick="event.stopPropagation();this.classList.toggle(\'revealed\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();this.classList.toggle(\'revealed\')}">$1</span>');
+      html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
+      return html;
+    }
+
+    function renderNewsMarkdown(raw) {
+      const lines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+      const output = [];
+      let paragraph = [];
+      let items = [];
+      const flushParagraph = () => {
+        if (paragraph.length) output.push('<p>' + paragraph.map(renderNewsInline).join('<br>') + '</p>');
+        paragraph = [];
+      };
+      const flushItems = () => {
+        if (items.length) output.push('<ul class="news-md-list">' + items.join('') + '</ul>');
+        items = [];
+      };
+      for (const line of lines) {
+        if (!line.trim()) { flushParagraph(); flushItems(); continue; }
+        if (/^\s*\*?-{3,}\*?\s*$/.test(line)) { flushParagraph(); flushItems(); output.push('<hr />'); continue; }
+        const heading = line.match(/^\s{0,3}(#{1,3})\s+(.+?)\s*#*\s*$/);
+        if (heading) { flushParagraph(); flushItems(); const level = heading[1].length; output.push(`<h${level}>${renderNewsInline(heading[2])}</h${level}>`); continue; }
+        const item = line.match(/^\s*(?:\[([+\-⭐])\]\s*|([-*+])\s+)(.*)$/u);
+        if (item) {
+          flushParagraph();
+          const marker = item[1] ? `<span class="news-md-marker">[${esc(item[1])}]</span> ` : '';
+          items.push(`<li>${marker}${renderNewsInline(item[3])}</li>`);
+          continue;
+        }
+        flushItems();
+        paragraph.push(line);
+      }
+      flushParagraph();
+      flushItems();
+      return '<div class="news-md">' + output.join('') + '</div>';
     }
 
     // ============================================================
@@ -4576,6 +4729,8 @@
     async function route(push = false) {
       const params = new URLSearchParams(location.search);
       const tab = params.get('tab');
+      const hubTab = params.get('hubtab');
+      if (['home', 'divisions', 'news', 'socials', 'team', 'programs', 'about', 'applications', 'mail'].includes(hubTab)) hubShow(hubTab, false);
       const serverId = params.get('server');
       const postId = params.get('post');
 
@@ -4610,7 +4765,10 @@
     const hubHttp = u => /^https?:\/\/\S+$/i.test(u || '') ? u : '';
     const hubHtmlTarget = u => ((/^https?:\/\/\S+$/i.test(u || '') || /^\/?[\w\-./]+(\?[\w=&\-]*)?$/.test(u || '')) && !/^\/\/|\.\./.test(u || '')) ? u : '';
     const hubNormAddr = u => String(u || '').trim().replace(/^https?:\/\/(www\.)?montresique\.com/i, '').replace(/^\//, '').replace(/\.html?$/i, '').toLowerCase();
-    const hubAllDivs = () => hubDivisions.some(d => hubNormAddr(d.html_url) === 'multicraft') ? hubDivisions : hubAllDivs();
+    const hubAllDivs = () => {
+      const divisions = hubDivisions || [];
+      return divisions.some(d => hubNormAddr(d.html_url) === 'multicraft') ? divisions : [...divisions, MC_DIVISION];
+    };
     const hubSetStatus = (id, msg) => { const el = document.getElementById(id); if (el) el.textContent = msg || ''; };
 
     const DISCORD_INVITE = ''; // optional: paste a fixed invite here; otherwise the Discord link comes from the Socials tab in the admin panel
@@ -4648,13 +4806,22 @@
       }));
     }
 
-    function hubShow(tab) {
+    function hubShow(tab, push = true) {
       document.getElementById('page-admin').classList.remove('active', 'window-open');
       document.querySelectorAll('.hub-view').forEach(v => v.classList.remove('active'));
       document.querySelectorAll('.hub-tabs button').forEach(b => b.classList.remove('active'));
       document.getElementById('hubview-' + tab).classList.add('active');
       document.getElementById('hubtab-' + tab).classList.add('active');
       window.scrollTo(0, 0);
+      if (tab === 'applications') loadStaffApplicationView();
+      if (tab === 'mail') loadMontresiqueMail();
+      if (push) {
+        const params = new URLSearchParams(location.search);
+        params.set('view', 'hub');
+        params.set('hubtab', tab);
+        params.delete('tab'); params.delete('server'); params.delete('post');
+        history.pushState({}, '', location.pathname + '?' + params.toString());
+      }
     }
     function hubOpenAdmin() {
       if (!isAdmin) return;
@@ -4677,6 +4844,7 @@
       } catch (e) { console.error(e); hubDataMissing = true; }
       await hubCheckAll();
       hubRenderDivisions(); hubRenderSocials(); hubRenderAdminLists(); hubApplyDiscord();
+      if (document.getElementById('hubview-applications')?.classList.contains('active')) loadStaffApplicationView();
     }
 
     function hubRenderDivisions() {
@@ -4707,7 +4875,7 @@
         const pid = p.slug || p.id;
         const img = (p.images && p.images[0]) ? `<img src="${esc(p.images[0])}" alt="" loading="lazy" />` : '<div class="ph">&#8499;</div>';
         const date = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-        return `<div class="hub-news-card" onclick="hubOpenNews('${esc(pid)}')">${img}<div class="body"><h4>${esc((p.name || '').replace(MT_NEWS_RE, ''))}</h4><div class="date">${esc(date)}</div><p>${emojifyCustom(linkify(p.description || ''))}</p></div></div>`;
+        return `<div class="hub-news-card" onclick="hubOpenNews('${esc(pid)}')">${img}<div class="body"><h4>${esc((p.name || '').replace(MT_NEWS_RE, ''))}</h4><div class="date">${esc(date)}</div><p>${emojifyCustom(renderNewsMarkdown(p.description || ''))}</p></div></div>`;
       };
       const empty = '<div class="hub-empty" style="grid-column:1/-1;">No Montresique announcements yet.</div>';
       document.getElementById('hub-news-grid').innerHTML = posts.length ? posts.map(card).join('') : empty;
@@ -4725,7 +4893,7 @@
         <div class="modal-title">${esc((p.name || '').replace(MT_NEWS_RE, ''))}</div>
         ${dateStr ? `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">${esc(dateStr)}</div>` : ''}
         ${imagesHtml ? `<div class="news-modal-images">${imagesHtml}</div>` : ''}
-        <div class="news-modal-desc">${emojifyCustom(linkify(p.description || ''))}</div>
+        <div class="news-modal-desc">${emojifyCustom(renderNewsMarkdown(p.description || ''))}</div>
         <div id="news-reactions-${esc(pid)}" class="reaction-bar-wrap"></div>`;
       document.getElementById('news-modal').classList.add('open');
       loadNewsReactions(pid);
@@ -4816,7 +4984,12 @@
     (function hubInit() {
       document.getElementById('hub-year').textContent = new Date().getFullYear();
       const _sw = switchAdminTab;
-      switchAdminTab = function (t) { _sw(t); if (t === 'divisions' || t === 'socials') { hubRenderAdminLists(); hubLoadHtmlFiles(); } };
+      switchAdminTab = function (t) {
+        _sw(t);
+        if (t === 'divisions' || t === 'socials') { hubRenderAdminLists(); hubLoadHtmlFiles(); }
+        if (t === 'applications') loadAdminApplications();
+        if (t === 'mail') loadAdminMailPanel();
+      };
       new MutationObserver(hubSync).observe(document.getElementById('nav-admin'), { attributes: true, attributeFilter: ['style'] });
       const mirror = () => {
         const l = document.getElementById('nav-login-btn'), hl = document.getElementById('hub-login-btn');
@@ -4828,16 +5001,23 @@
     })();
 
     init();
-    route(false);
 
     // ═══════════════════════ CHAT + AUTH (Discord login via Supabase Auth) ═══════════════════════
 
     let discordUser = null;
+    let staffApplicationsOpen = false;
+    let adminStaffApplicationsChannel = null;
+    let adminMailRecipients = [];
+    let accountSyncForUser = null;
+    const STAFF_FILES_BUCKET = 'staff-application-files';
     let authReady = false; // becomes true once we've resolved the very first session check
     let chatMessages = [];
     let chatOpen = false;
     let chatPollingInterval = null;
     let chatMessagesEl = null, chatInput = null, chatSendBtn = null;
+
+    // Process deep links only after auth globals and hub state have initialized.
+    route(false);
 
     function getDiscordAvatarUrl(user) { return user?.avatar || ''; }
     function getDiscordDisplayName(user) { return user?.global_name || user?.username || 'User'; }
@@ -4845,7 +5025,7 @@
     async function startDiscordLogin() {
       await supabaseClient.auth.signInWithOAuth({
         provider: 'discord',
-        options: { redirectTo: window.location.origin + window.location.pathname }
+        options: { redirectTo: window.location.origin + window.location.pathname + window.location.search }
       });
     }
 
@@ -4866,6 +5046,7 @@
         username: meta.full_name || meta.name || meta.user_name || 'User',
         global_name: meta.full_name || meta.name || null,
         avatar: meta.avatar_url || '',
+        auth_user_id: session.user.id,
       };
     }
 
@@ -4913,7 +5094,14 @@
       updateChatAuthState();
       refreshAdminStatus();
       if (chatOpen) loadChatMessages();
-      if (discordUser) recordSiteLogin(discordUser); // fires every time a logged-in session is detected (login, refresh, tab reload)
+      if (discordUser) {
+        recordSiteLogin(discordUser); // fires every time a logged-in session is detected (login, refresh, tab reload)
+        syncMontresiqueAccount(session?.user, discordUser);
+      } else {
+        accountSyncForUser = null;
+      }
+      if (document.getElementById('hubview-applications')?.classList.contains('active')) loadStaffApplicationView();
+      if (document.getElementById('hubview-mail')?.classList.contains('active')) loadMontresiqueMail();
     }
 
     // Upserts a row recording that this Discord user has logged in, so the admin
@@ -5182,6 +5370,403 @@
       initDiscordAuth();
     }
 
+    // ═════════ STAFF APPLICATIONS + MONTRESIQUE MAIL ═════════
+    function staffApplicationDivisions() {
+      const seen = new Set();
+      return [MC_DIVISION, ...(hubDivisions || [])].filter(d => {
+        const name = String(d?.name || '').trim();
+        const key = name.toLowerCase();
+        if (!name || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).map(d => String(d.name).trim());
+    }
+
+    function staffApplicationFormHtml() {
+      const divisions = staffApplicationDivisions();
+      return `<form class="account-form" id="staff-application-form" onsubmit="submitStaffApplication(event)">
+        <div class="account-field"><label for="staff-app-role">What role are you applying for?</label><input id="staff-app-role" name="role" type="text" maxlength="100" required placeholder="Role" /></div>
+        <div class="account-field"><label for="staff-app-age">How old are you? (You can say age groups)</label><input id="staff-app-age" name="age_group" type="text" maxlength="40" required placeholder="For example, 16–18" /></div>
+        <div class="account-field"><label for="staff-app-contribute">Are you willing to contribute to Montresique when we need you?</label><select id="staff-app-contribute" name="willing_to_contribute" required><option value="">Choose an answer…</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <fieldset class="account-field" style="border:0;padding:0;margin-left:0;margin-right:0;"><legend class="account-label">What divisions would you like to help with? (Choose one or more)</legend><div class="account-checks">${divisions.map((name, i) => `<label class="account-check"><input type="checkbox" name="staff-division" value="${esc(name)}" /> ${esc(name)}</label>`).join('')}</div><div class="account-help">Select at least one division.</div></fieldset>
+        <div class="account-field"><label for="staff-app-reason">Why do you want this position?</label><textarea id="staff-app-reason" name="reason" maxlength="2000" required></textarea></div>
+        <div class="account-field"><label for="staff-app-work">Can you show examples of your work?</label><input id="staff-app-work" name="work_samples" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required /><div class="account-help">Upload 1–5 images (JPEG, PNG, WebP, or GIF), up to 5 MB each. Only you and staff reviewers can access these files.</div></div>
+        <div class="account-field"><label for="staff-app-trust">Can we trust what you do on Montresique?</label><textarea id="staff-app-trust" name="trust_response" maxlength="2000" required></textarea></div>
+        <div class="account-field"><label for="staff-app-discord">Are you active on Discord?</label><select id="staff-app-discord" name="discord_active" required><option value="">Choose an answer…</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div id="staff-application-submit-status" class="account-status" role="status"></div>
+        <button class="hub-btn" type="submit">Submit Application</button>
+      </form>`;
+    }
+
+    async function getStaffApplicationSetting() {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/staff_application_settings?select=is_open&id=eq.1', { headers: SUPABASE_HEADERS, cache: 'no-store' });
+      if (!res.ok) throw new Error('Could not load application settings (' + res.status + ').');
+      const rows = await res.json();
+      return !!rows?.[0]?.is_open;
+    }
+
+    async function loadStaffApplicationView() {
+      const status = document.getElementById('staff-application-page-status');
+      const wrap = document.getElementById('staff-application-form-wrap');
+      if (!status || !wrap) return;
+      status.classList.remove('error');
+      wrap.innerHTML = '';
+      if (!authReady) {
+        status.textContent = 'Checking your Montresique sign-in…';
+        return;
+      }
+      if (!discordUser) {
+        status.innerHTML = 'Sign in with Discord to apply. <button class="hub-btn ghost" type="button" onclick="startDiscordLogin()">Log in</button>';
+        renderMyStaffApplications([]);
+        return;
+      }
+      try {
+        staffApplicationsOpen = await getStaffApplicationSetting();
+        status.textContent = staffApplicationsOpen ? 'Applications are open.' : 'Applications are currently closed. Please check back later.';
+        if (staffApplicationsOpen) wrap.innerHTML = staffApplicationFormHtml();
+        await loadMyStaffApplications();
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'Could not load application status. Please try again later.';
+        status.classList.add('error');
+      }
+    }
+
+    function renderMyStaffApplications(rows) {
+      const el = document.getElementById('my-staff-applications');
+      if (!el) return;
+      if (!rows?.length) {
+        el.innerHTML = '<div class="hub-empty">You have no staff applications yet.</div>';
+        return;
+      }
+      el.innerHTML = rows.map(a => `<div class="account-card"><div style="display:flex;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><strong style="color:#fff;">${esc(a.role)}</strong><span style="color:${a.status === 'accepted' ? '#5ee7a0' : a.status === 'declined' ? '#ff6688' : '#4da3ff'};text-transform:capitalize;">${esc(a.status)}</span></div><div class="account-help" style="margin-top:.5rem;">Submitted ${esc(new Date(a.created_at).toLocaleString())}</div></div>`).join('');
+    }
+
+    async function loadMyStaffApplications() {
+      if (!discordUser) return renderMyStaffApplications([]);
+      try {
+        const rows = await adminRest('staff_applications?select=id,role,status,created_at&order=created_at.desc&limit=50');
+        renderMyStaffApplications(rows || []);
+      } catch (e) {
+        console.error(e);
+        const el = document.getElementById('my-staff-applications');
+        if (el) el.innerHTML = '<div class="hub-empty">Could not load your application history.</div>';
+      }
+    }
+
+    async function detectWorkImageType(file) {
+      const b = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+      if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) return 'image/png';
+      if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+      if (b.length >= 6 && String.fromCharCode(...b.slice(0, 6)).match(/^GIF8[79]a$/)) return 'image/gif';
+      if (b.length >= 12 && String.fromCharCode(...b.slice(0, 4)) === 'RIFF' && String.fromCharCode(...b.slice(8, 12)) === 'WEBP') return 'image/webp';
+      return '';
+    }
+
+    async function submitStaffApplication(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const status = document.getElementById('staff-application-submit-status');
+      const btn = form.querySelector('button[type="submit"]');
+      const files = [...document.getElementById('staff-app-work').files];
+      const divisions = [...form.querySelectorAll('input[name="staff-division"]:checked')].map(x => x.value);
+      if (!discordUser || !discordUser.auth_user_id) {
+        status.textContent = 'Please sign in to your Montresique account before submitting.';
+        status.classList.add('error');
+        return;
+      }
+      if (!staffApplicationsOpen) {
+        status.textContent = 'Applications are closed.';
+        status.classList.add('error');
+        return;
+      }
+      if (!divisions.length) {
+        status.textContent = 'Choose at least one division.';
+        status.classList.add('error');
+        form.querySelector('input[name="staff-division"]')?.focus();
+        return;
+      }
+      if (files.length < 1 || files.length > 5) {
+        status.textContent = 'Upload between one and five work-sample images.';
+        status.classList.add('error');
+        return;
+      }
+      const types = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+      for (const file of files) {
+        const detected = await detectWorkImageType(file);
+        if (file.size > 5 * 1024 * 1024 || !types.has(file.type) || detected !== file.type) {
+          status.textContent = 'Each file must be a real JPEG, PNG, WebP, or GIF image no larger than 5 MB.';
+          status.classList.add('error');
+          return;
+        }
+      }
+      const paths = [];
+      btn.disabled = true;
+      status.classList.remove('error');
+      try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        if (!sessionData?.session?.access_token || sessionData.session.user.id !== discordUser.auth_user_id) throw new Error('Your login session is not ready. Please sign in again.');
+        const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+        for (let i = 0; i < files.length; i++) {
+          status.textContent = `Uploading example ${i + 1} of ${files.length}…`;
+          const file = files[i];
+          const objectPath = `${discordUser.auth_user_id}/${crypto.randomUUID()}.${extension[file.type]}`;
+          const { error } = await supabaseClient.storage.from(STAFF_FILES_BUCKET).upload(objectPath, file, { contentType: file.type, upsert: false });
+          if (error) throw error;
+          paths.push(objectPath);
+        }
+        status.textContent = 'Submitting your application…';
+        await adminRest('staff_applications', {
+          method: 'POST',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            applicant_username: getDiscordDisplayName(discordUser),
+            role: document.getElementById('staff-app-role').value.trim(),
+            age_group: document.getElementById('staff-app-age').value.trim(),
+            willing_to_contribute: document.getElementById('staff-app-contribute').value === 'yes',
+            divisions,
+            reason: document.getElementById('staff-app-reason').value.trim(),
+            work_image_paths: paths,
+            trust_response: document.getElementById('staff-app-trust').value.trim(),
+            discord_active: document.getElementById('staff-app-discord').value === 'yes'
+          })
+        });
+        status.textContent = 'Application submitted. Staff will review it and send the decision to your Montresique Mail inbox.';
+        form.reset();
+        await loadMyStaffApplications();
+        await loadAdminApplications();
+      } catch (e) {
+        console.error(e);
+        if (paths.length) {
+          try { await supabaseClient.storage.from(STAFF_FILES_BUCKET).remove(paths); } catch (cleanupError) { console.warn('Could not clean up unlinked application images.', cleanupError); }
+        }
+        status.textContent = e.message?.includes('staff_applications_one_pending_per_user') ? 'You already have a pending application. Wait for staff to review it before applying again.' : 'Could not submit your application: ' + (e.message || 'unknown error');
+        status.classList.add('error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadAdminApplications() {
+      if (!isAdmin) return;
+      const list = document.getElementById('admin-staff-applications-list');
+      const toggle = document.getElementById('staff-application-toggle');
+      const status = document.getElementById('staff-application-admin-status');
+      if (!list || !toggle || !status) return;
+      try {
+        staffApplicationsOpen = await getStaffApplicationSetting();
+        toggle.textContent = staffApplicationsOpen ? 'Close applications' : 'Open applications';
+        status.textContent = staffApplicationsOpen ? 'Submissions are open.' : 'Submissions are closed.';
+        list.innerHTML = '<div class="account-status">Loading applications…</div>';
+        const rows = await adminRest('staff_applications?select=*&order=created_at.desc&limit=200');
+        if (!rows?.length) {
+          list.innerHTML = '<div class="hub-empty">No staff applications have been submitted yet.</div>';
+          return;
+        }
+        const cards = await Promise.all(rows.map(async a => {
+          let imageHtml = '';
+          for (const objectPath of (a.work_image_paths || [])) {
+            try {
+              const { data, error } = await supabaseClient.storage.from(STAFF_FILES_BUCKET).createSignedUrl(objectPath, 900);
+              if (!error && data?.signedUrl) imageHtml += `<a href="${esc(data.signedUrl)}" target="_blank" rel="noopener noreferrer"><img src="${esc(data.signedUrl)}" alt="Applicant work sample" loading="lazy" style="width:110px;height:90px;object-fit:cover;border-radius:7px;border:1px solid var(--border);" /></a>`;
+            } catch (e) { console.warn('Could not create work-sample link', e); }
+          }
+          const yesNo = value => value ? 'Yes' : 'No';
+          const actions = a.status === 'pending' ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem;"><button class="btn btn-primary" type="button" onclick="reviewStaffApplication('${esc(a.id)}','accept')">Accept</button><button class="btn btn-outline" type="button" onclick="reviewStaffApplication('${esc(a.id)}','decline')">Decline</button></div>` : `<div style="margin-top:.7rem;color:var(--muted);font-size:.78rem;">${esc(a.status)}${a.reviewed_at ? ' · reviewed ' + esc(new Date(a.reviewed_at).toLocaleString()) : ''}</div>`;
+          return `<article class="account-card"><div style="display:flex;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><strong style="color:#fff;font-size:1rem;">${esc(a.applicant_username)} · ${esc(a.role)}</strong><span style="color:${a.status === 'accepted' ? '#5ee7a0' : a.status === 'declined' ? '#ff6688' : '#4da3ff'};text-transform:capitalize;">${esc(a.status)}</span></div><div class="account-help" style="margin:.4rem 0 .9rem;">Discord ID: ${esc(a.applicant_discord_id)} · Submitted ${esc(new Date(a.created_at).toLocaleString())}</div><div style="font-size:.83rem;line-height:1.7;"><div><b>Age group:</b> ${esc(a.age_group)}</div><div><b>Willing to contribute:</b> ${yesNo(a.willing_to_contribute)}</div><div><b>Divisions:</b> ${esc((a.divisions || []).join(', '))}</div><div style="margin-top:.5rem;"><b>Why this position:</b><div style="white-space:pre-wrap;color:var(--muted);">${esc(a.reason)}</div></div><div style="margin-top:.5rem;"><b>Trust response:</b><div style="white-space:pre-wrap;color:var(--muted);">${esc(a.trust_response)}</div></div><div style="margin-top:.5rem;"><b>Active on Discord:</b> ${yesNo(a.discord_active)}</div><div style="margin-top:.7rem;"><b>Work samples:</b><div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;">${imageHtml || '<span class="account-help">Images unavailable or could not be signed.</span>'}</div></div></div>${actions}</article>`;
+        }));
+        list.innerHTML = cards.join('');
+      } catch (e) {
+        console.error(e);
+        list.innerHTML = '<div class="account-status error">Could not load applications. Verify the Supabase migration and application table policies.</div>';
+      }
+    }
+
+    async function toggleStaffApplications() {
+      if (!isAdmin) return;
+      const next = !staffApplicationsOpen;
+      const btn = document.getElementById('staff-application-toggle');
+      if (btn) btn.disabled = true;
+      try {
+        await adminRest('staff_application_settings?id=eq.1', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ is_open: next }) });
+        await logAdminAction(next ? 'Opened staff applications' : 'Closed staff applications');
+        staffApplicationsOpen = next;
+        await loadAdminApplications();
+        if (document.getElementById('hubview-applications')?.classList.contains('active')) loadStaffApplicationView();
+      } catch (e) {
+        console.error(e);
+        alert('Could not change application status: ' + (e.message || 'unknown error'));
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function reviewStaffApplication(id, decision) {
+      if (!isAdmin || !['accept', 'decline'].includes(decision)) return;
+      const label = decision === 'accept' ? 'accept' : 'decline';
+      if (!confirm(`Are you sure you want to ${label} this staff application? The applicant will receive a Montresique Mail message.`)) return;
+      try {
+        const { error } = await supabaseClient.rpc('review_staff_application', { p_application_id: id, p_decision: decision });
+        if (error) throw error;
+        await logAdminAction('Reviewed staff application', decision + ': ' + id);
+        await loadAdminApplications();
+      } catch (e) {
+        console.error(e);
+        alert('Could not review application: ' + (e.message || 'unknown error'));
+      }
+    }
+
+    function stopStaffApplicationsSubscription() {
+      if (adminStaffApplicationsChannel) {
+        supabaseClient.removeChannel(adminStaffApplicationsChannel);
+        adminStaffApplicationsChannel = null;
+      }
+    }
+
+    function subscribeToStaffApplications() {
+      if (!isAdmin || adminStaffApplicationsChannel) return;
+      adminStaffApplicationsChannel = supabaseClient.channel('admin-staff-applications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_applications' }, () => {
+          if (!isAdmin) return;
+          showAuthToast('A new staff application has arrived.');
+          loadAdminApplications();
+        })
+        .subscribe(status => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('Staff application live updates unavailable:', status);
+        });
+    }
+
+    async function loadAdminMailPanel() {
+      if (!isAdmin) return;
+      const picker = document.getElementById('admin-mail-recipient');
+      if (!picker) return;
+      const priorRecipient = picker.value;
+      picker.innerHTML = '<option value="">Loading accounts…</option>';
+      try {
+        const [{ data: recipients, error: recipientsError }, settings] = await Promise.all([
+          supabaseClient.rpc('get_montresique_mail_recipients'),
+          adminRest('montresique_mail_welcome_settings?select=*&id=eq.1')
+        ]);
+        if (recipientsError) throw recipientsError;
+        adminMailRecipients = recipients || [];
+        picker.innerHTML = '<option value="">Choose a Montresique account…</option>' + adminMailRecipients.map(u => `<option value="${esc(u.user_id)}">${esc(u.username || 'User')} · ${esc(u.discord_user_id || '')}</option>`).join('');
+        if (adminMailRecipients.some(u => u.user_id === priorRecipient)) picker.value = priorRecipient;
+        const config = settings?.[0];
+        if (config) {
+          document.getElementById('welcome-mail-enabled').checked = !!config.enabled;
+          document.getElementById('welcome-mail-subject').value = config.subject || '';
+          document.getElementById('welcome-mail-body').value = config.body || '';
+        }
+      } catch (e) {
+        console.error(e);
+        picker.innerHTML = '<option value="">Could not load accounts</option>';
+        const saveStatus = document.getElementById('welcome-mail-save-status');
+        if (saveStatus) saveStatus.textContent = 'Could not load Mail settings. Apply the Supabase migration first.';
+      }
+    }
+
+    async function sendAdminMail() {
+      if (!isAdmin) return;
+      const recipient = document.getElementById('admin-mail-recipient').value;
+      const subject = document.getElementById('admin-mail-subject').value.trim();
+      const body = document.getElementById('admin-mail-body').value.trim();
+      const status = document.getElementById('admin-mail-send-status');
+      status.classList.remove('error');
+      if (!recipient || !subject || !body) {
+        status.textContent = 'Choose an account and enter both a subject and message.';
+        status.classList.add('error');
+        return;
+      }
+      try {
+        const { error } = await supabaseClient.rpc('send_montresique_mail', { p_recipient_user_id: recipient, p_subject: subject, p_body: body });
+        if (error) throw error;
+        await logAdminAction('Sent Montresique Mail', 'to account ' + recipient);
+        document.getElementById('admin-mail-subject').value = '';
+        document.getElementById('admin-mail-body').value = '';
+        status.textContent = 'Message sent to the account’s Montresique Mail inbox.';
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'Could not send Mail: ' + (e.message || 'unknown error');
+        status.classList.add('error');
+      }
+    }
+
+    async function saveWelcomeMailSettings() {
+      if (!isAdmin) return;
+      const enabled = document.getElementById('welcome-mail-enabled').checked;
+      const subject = document.getElementById('welcome-mail-subject').value.trim();
+      const body = document.getElementById('welcome-mail-body').value.trim();
+      const status = document.getElementById('welcome-mail-save-status');
+      status.classList.remove('error');
+      if (!subject || !body) {
+        status.textContent = 'A welcome subject and message are required, even while the welcome message is disabled.';
+        status.classList.add('error');
+        return;
+      }
+      try {
+        await adminRest('montresique_mail_welcome_settings?id=eq.1', { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ enabled, subject, body }) });
+        await logAdminAction(enabled ? 'Enabled welcome Mail' : 'Saved welcome Mail', subject);
+        status.textContent = enabled ? 'Saved. New accounts will receive this once in Montresique Mail.' : 'Saved. Welcome Mail is currently disabled.';
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'Could not save the welcome message: ' + (e.message || 'unknown error');
+        status.classList.add('error');
+      }
+    }
+
+    async function loadMontresiqueMail() {
+      const list = document.getElementById('hub-mail-list');
+      const status = document.getElementById('hub-mail-status');
+      if (!list || !status) return;
+      list.innerHTML = '';
+      if (!authReady) {
+        status.textContent = 'Checking your Montresique sign-in…';
+        return;
+      }
+      if (!discordUser) {
+        status.innerHTML = 'Sign in to read your account Mail. <button class="hub-btn ghost" type="button" onclick="startDiscordLogin()">Log in</button>';
+        return;
+      }
+      status.textContent = 'Loading your messages…';
+      try {
+        const messages = await adminRest('montresique_mail?select=*&order=created_at.desc&limit=100');
+        status.textContent = messages?.length ? `${messages.length} message${messages.length === 1 ? '' : 's'}.` : 'Your inbox is empty.';
+        list.innerHTML = (messages || []).map(m => `<article class="account-card"><div style="display:flex;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><strong style="color:#fff;">${esc(m.subject)}</strong><span class="account-help">${esc(new Date(m.created_at).toLocaleString())}</span></div><div class="account-help" style="margin-top:.3rem;">From ${esc(m.sender_name || 'Montresique')}${m.read_at ? '' : ' · <span style="color:#4da3ff;">New</span>'}</div><div class="account-mail-body">${esc(m.body)}</div>${m.read_at ? '' : `<button class="hub-btn ghost" type="button" style="margin-top:.8rem;" onclick="markMontresiqueMailRead('${esc(m.id)}')">Mark as read</button>`}</article>`).join('') || '<div class="hub-empty">No Mail yet.</div>';
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'Could not load your Mail. Please try again later.';
+        status.classList.add('error');
+      }
+    }
+
+    async function markMontresiqueMailRead(id) {
+      try {
+        const { error } = await supabaseClient.rpc('mark_montresique_mail_read', { p_message_id: id });
+        if (error) throw error;
+        loadMontresiqueMail();
+      } catch (e) {
+        console.error(e);
+        alert('Could not update the message: ' + (e.message || 'unknown error'));
+      }
+    }
+
+    async function syncMontresiqueAccount(authUser, displayUser) {
+      const userId = authUser?.id;
+      if (!userId || accountSyncForUser === userId) return;
+      accountSyncForUser = userId;
+      const { error } = await supabaseClient.rpc('sync_montresique_profile', {
+        p_username: getDiscordDisplayName(displayUser),
+        p_avatar_url: getDiscordAvatarUrl(displayUser)
+      });
+      if (error) {
+        console.error('Could not sync Montresique account profile:', error);
+        accountSyncForUser = null;
+        return;
+      }
+      const { error: welcomeError } = await supabaseClient.rpc('deliver_montresique_welcome_mail');
+      if (welcomeError) console.error('Could not check welcome Mail:', welcomeError);
+    }
+
     function handleNavLoginClick() {
       // placeholder; real handler assigned per-state in renderNavAuthButton()
     }
@@ -5307,6 +5892,7 @@
     async function loadAdminPanel() {
       const overlay = document.getElementById('admin-loading-overlay');
       overlay?.classList.add('active');
+      subscribeToStaffApplications();
 
       renderTmRoleChips();
       loadAdminAnalytics();
@@ -5324,6 +5910,8 @@
         ['chat', loadAdminChat],
         ['servers/overrides', loadAdminServersAndSlugs],
         ['news', loadAdminNews],
+        ['staff applications', loadAdminApplications],
+        ['mail settings', loadAdminMailPanel],
         ['audit log', loadAdminAuditLog],
       ];
       const results = await Promise.allSettled(tasks.map(([, fn]) => fn()));
@@ -6208,7 +6796,7 @@
       const pid = p.slug || p.id;
       const img = (p.images && p.images[0]) ? '<img src="' + esc(p.images[0]) + '" alt="" loading="lazy" />' : '<div class="ph">&#8499;</div>';
       const date = p.created_at ? new Date(p.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-      return '<div class="hub-news-card" style="cursor:pointer;" onclick="hubOpenNews(\'' + esc(pid) + '\')">' + img + '<div class="body"><h4>' + esc((p.name || '').replace(MT_NEWS_RE, '')) + '</h4><div class="date">' + esc(date) + '</div><p style="display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">' + emojifyCustom(linkify(p.description || '')) + '</p></div></div>';
+      return '<div class="hub-news-card" style="cursor:pointer;" onclick="hubOpenNews(\'' + esc(pid) + '\')">' + img + '<div class="body"><h4>' + esc((p.name || '').replace(MT_NEWS_RE, '')) + '</h4><div class="date">' + esc(date) + '</div><p style="display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">' + emojifyCustom(renderNewsMarkdown(p.description || '')) + '</p></div></div>';
     };
     const empty = '<div class="hub-empty" style="grid-column:1/-1;">No Montresique announcements yet.</div>';
     document.getElementById('hub-news-grid').innerHTML = posts.length ? posts.map(card).join('') : empty;
@@ -6225,7 +6813,7 @@
       '<button class="modal-close" onclick="closeNewsModal()">&times;</button><div class="modal-title">' + esc(title) + '</div>' +
       (ds ? '<div style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem;margin-top:-0.5rem;">' + esc(ds) + '</div>' : '') +
       (imgs ? '<div class="news-modal-images">' + imgs + '</div>' : '') +
-      '<div class="news-modal-desc">' + emojifyCustom(linkify(p.description || '')) + '</div><div id="news-reactions-' + esc(pid) + '" class="reaction-bar-wrap"></div>';
+      '<div class="news-modal-desc">' + emojifyCustom(renderNewsMarkdown(p.description || '')) + '</div><div id="news-reactions-' + esc(pid) + '" class="reaction-bar-wrap"></div>';
     document.getElementById('news-modal').classList.add('open');
     loadNewsReactions(pid);
     setMetaTags({ title: title + ' \u2014 Montresique News', description: (p.description || '').slice(0, 200), image: (p.images || [])[0] || null, url: location.origin + location.pathname + '?page=news&n=' + encodeURIComponent(pid) });
