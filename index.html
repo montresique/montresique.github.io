@@ -2437,6 +2437,7 @@
       <div style="display:flex;gap:.7rem;flex-wrap:wrap;">
         <button class="hub-btn" onclick="hubShow('divisions')">Browse Divisions</button>
         <button class="hub-btn ghost" onclick="hubShow('news')">Montresique News</button>
+        <button class="hub-btn ghost" onclick="hubShow('applications')">Staff Applications</button>
       </div>
       <div class="hub-h2">Divisions</div>
       <div class="div-grid" id="hub-div-grid-home"></div>
@@ -2883,9 +2884,9 @@
           </div>
           <div class="macos-tab-content" id="admin-tab-applications">
             <div class="section-sub" style="margin-top:0;">Staff Applications</div>
-            <p style="color:var(--muted);font-size:0.8rem;line-height:1.6;">Open or close submissions here. New applications appear below; only admins can review them. Work-sample images are stored privately.</p>
+            <p style="color:var(--muted);font-size:0.8rem;line-height:1.6;">Only Leadership can open or close submissions. Admins can review new applications below. Work-sample images are stored privately.</p>
             <div class="leader-card" style="max-width:680px;margin:1rem 0;padding:1rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
-              <button class="btn btn-primary" id="staff-application-toggle" type="button" onclick="toggleStaffApplications()">Loading…</button>
+              <button class="btn btn-primary" id="staff-application-toggle" type="button" hidden onclick="toggleStaffApplications()">Loading…</button>
               <span id="staff-application-admin-status" style="font-size:.82rem;color:var(--muted);"></span>
             </div>
             <div id="admin-staff-applications-list"></div>
@@ -3325,11 +3326,15 @@
       // Don't flip isAdmin to false while re-checking (that made the Admin button flash and could close the panel).
       let verdict = null; // null = couldn't tell (network/server hiccup) -> keep the previous answer
       try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/team_members?select=roles,section&discord_id=eq.' + encodeURIComponent(discordUser.id), { headers: SUPABASE_HEADERS });
-        if (res.ok) {
-          const rows = await res.json();
-          const admin = !!rows[0] && (rows[0].roles || []).length > 0;
-          verdict = { admin, lead: admin && rows[0].section === 'leadership' };
+        const [adminResult, leadershipResult] = await Promise.all([
+          supabaseClient.rpc('is_montresique_admin'),
+          supabaseClient.rpc('is_montresique_leadership'),
+        ]);
+        if (!adminResult.error && !leadershipResult.error) {
+          const admin = adminResult.data === true;
+          verdict = { admin, lead: admin && leadershipResult.data === true };
+        } else {
+          console.error('Could not verify Montresique admin roles:', adminResult.error || leadershipResult.error);
         }
       } catch (e) { console.error(e); }
       if (seq !== adminCheckSeq) return; // a newer check superseded this one
@@ -5555,8 +5560,10 @@
       if (!list || !toggle || !status) return;
       try {
         staffApplicationsOpen = await getStaffApplicationSetting();
+        toggle.hidden = !isLeadership;
+        toggle.disabled = !isLeadership;
         toggle.textContent = staffApplicationsOpen ? 'Close applications' : 'Open applications';
-        status.textContent = staffApplicationsOpen ? 'Submissions are open.' : 'Submissions are closed.';
+        status.textContent = (staffApplicationsOpen ? 'Submissions are open.' : 'Submissions are closed.') + (isLeadership ? '' : ' Only Leadership can open or close submissions.');
         list.innerHTML = '<div class="account-status">Loading applications…</div>';
         const rows = await adminRest('staff_applications?select=*&order=created_at.desc&limit=200');
         if (!rows?.length) {
@@ -5583,7 +5590,7 @@
     }
 
     async function toggleStaffApplications() {
-      if (!isAdmin) return;
+      if (!isLeadership) return alert('Only Leadership can open or close staff applications.');
       const next = !staffApplicationsOpen;
       const btn = document.getElementById('staff-application-toggle');
       if (btn) btn.disabled = true;
