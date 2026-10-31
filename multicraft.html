@@ -3808,9 +3808,7 @@
       const pills = Object.keys(groups).map(token => {
         const people = groups[token];
         const isMine = !!(mine && people.some(p => p.discord_user_id === mine));
-        const visual = customEmojiFileSet.has(token)
-          ? `<img class="emoji-inline" src="${emojiFileSrc(token)}" alt="" ${emojiOnErrorAttr(token)} />`
-          : esc(token);
+        const visual = customEmojiImageHtml(token) || esc(token);
         return `<div class="reaction-pill-wrap">
         <span class="reaction-pill${isMine ? ' mine' : ''}" style="cursor:default;" data-token="${esc(token)}">${visual} <span>${people.length}</span></span>
         <div class="reaction-tooltip" data-token="${esc(token)}"></div>
@@ -4019,7 +4017,23 @@
     // cause of some custom emojis — usually the ones with more "creative" names —
     // never loading even though they were discovered correctly).
     function emojiFileSrc(name) {
-      return EMOJI_DIR + '/' + encodeURIComponent(name).replace(/%2F/gi, '/');
+      return '/' + EMOJI_DIR + '/' + encodeURIComponent(name);
+    }
+    function customEmojiFilenameForToken(token) {
+      const value = String(token || '');
+      const match = customEmojiFiles.find(file => file === value || esc(file) === value);
+      if (match) return match;
+      const textarea = document.createElement('textarea');
+      textarea.innerHTML = value;
+      const decoded = textarea.value;
+      return decoded.length <= 100 && !/[\\/:]/.test(decoded) && /\.(png|jpe?g|gif|webp|svg)$/i.test(decoded)
+        ? decoded
+        : null;
+    }
+    function customEmojiImageHtml(token, altText = '') {
+      const filename = customEmojiFilenameForToken(token);
+      if (!filename) return '';
+      return `<img class="emoji-inline" src="${esc(emojiFileSrc(filename))}" alt="${esc(altText)}" title=":${esc(filename)}:" ${emojiOnErrorAttr(filename)} />`;
     }
 
     // Shared onerror handler wired onto every custom-emoji <img>: logs which exact
@@ -4130,23 +4144,22 @@
       }
     }
 
-    // Turns any ":filename.ext:" token that matches a known custom emoji file
-    // into an <img>. Must be called on text that has ALREADY been HTML-escaped
-    // (e.g. the output of esc()/linkify()) — the token itself is plain
-    // alphanumeric/./_/-/+ so it's safe to match against escaped output.
+    // Turns a file-backed ":filename.ext:" token into an <img>. Must be called
+    // on text that has ALREADY been HTML-escaped (e.g. esc()/linkify()). Exact
+    // known filenames are preferred; safe image filenames still render when the
+    // GitHub API listing is unavailable, and the URL builder encodes the name.
     function emojifyCustom(html) {
-      if (!customEmojiFileSet.size) return html;
       // Previously this only matched ":[a-zA-Z0-9._+-]+:" — any custom emoji whose
       // actual filename had a space, apostrophe, parentheses, or other punctuation
       // (common for "creative" emoji names) could be picked from the autocomplete
       // and inserted as ":My Cool One.gif:", but would then NEVER render because the
       // token itself didn't match the whitelist. Matching is now permissive (any
-      // non-colon run up to 100 chars) and safety comes from requiring an EXACT
-      // match against the known custom-emoji filename set, not from the character
-      // whitelist — so this can't accidentally light up random ":word:word:" text.
+      // non-colon run up to 100 chars); the filename helper restricts fallback
+      // tokens to safe image-file names instead of arbitrary URL or HTML content.
       return html.replace(/:([^:\n]{1,100}):/g, (whole, name) => {
-        if (!customEmojiFileSet.has(name)) return whole;
-        return `<img class="emoji-inline" src="${emojiFileSrc(name)}" alt=":${esc(name)}:" title=":${esc(name)}:" loading="lazy" ${emojiOnErrorAttr(name)} />`;
+        const filename = customEmojiFilenameForToken(name);
+        if (!filename) return whole;
+        return customEmojiImageHtml(name, ':' + filename + ':');
       });
     }
 
@@ -4198,7 +4211,7 @@
       emojiAc.box.innerHTML = emojiAc.items.map((it, i) => `
       <div class="emoji-ac-item${i === emojiAc.activeIndex ? ' active' : ''}" data-idx="${i}">
         ${it.type === 'custom'
-          ? `<img src="${EMOJI_DIR}/${esc(it.key)}" alt="" loading="lazy" />`
+          ? customEmojiImageHtml(it.key)
           : `<span class="emoji-ac-uni">${it.disp}</span>`}
         <span class="emoji-ac-name">${it.type === 'custom' ? esc(it.key) : ':' + esc(it.key) + ':'}</span>
       </div>`).join('');
@@ -4306,9 +4319,7 @@
       const pills = Object.keys(groups).map(token => {
         const people = groups[token];
         const isMine = !!(mine && people.some(p => p.id === mine));
-        const visual = customEmojiFileSet.has(token)
-          ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
-          : esc(token);
+        const visual = customEmojiImageHtml(token) || esc(token);
         return `<div class="reaction-pill-wrap">
         <button class="reaction-pill${isMine ? ' mine' : ''}" data-token="${esc(token)}">${visual} <span>${people.length}</span></button>
         <div class="reaction-tooltip" data-token="${esc(token)}"></div>
@@ -4375,9 +4386,7 @@
     // review preview just as well as from inside the full news modal.
     function showReactionListOverlay(token, people) {
       closeReactionListOverlay();
-      const visual = customEmojiFileSet.has(token)
-        ? `<img class="emoji-inline" src="${EMOJI_DIR}/${esc(token)}" alt="" />`
-        : esc(token);
+      const visual = customEmojiImageHtml(token) || esc(token);
       const overlay = document.createElement('div');
       overlay.className = 'reaction-list-overlay';
       overlay.id = 'reaction-list-overlay-dynamic';
@@ -4449,7 +4458,7 @@
         const items = getEmojiCandidates(q || '');
         grid.innerHTML = items.length ? items.map(it => `
         <button class="emoji-picker-item" type="button" data-token="${esc(it.type === 'custom' ? it.key : it.disp)}" title="${esc(it.key)}">
-          ${it.type === 'custom' ? `<img src="${EMOJI_DIR}/${esc(it.key)}" alt="" loading="lazy" />` : it.disp}
+          ${it.type === 'custom' ? customEmojiImageHtml(it.key) : it.disp}
         </button>`).join('') : '<div class="emoji-picker-empty">No matches</div>';
         grid.querySelectorAll('.emoji-picker-item').forEach(b => b.addEventListener('click', () => toggleReaction(postId, b.dataset.token)));
       }
@@ -5194,28 +5203,27 @@
       document.getElementById('tm-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // USERS — pulled purely from admin_known_users (every Discord login, recorded by
-    // recordSiteLogin() every time a logged-in session is detected). This is now
-    // the single source of truth, since Supabase's public REST API doesn't expose
-    // the full auth.users list otherwise.
+    // USERS — read from an admin-only RPC over auth.users so accounts appear
+    // immediately, before their first profile sync or site login.
     async function loadAdminUsers() {
       const el = document.getElementById('admin-users-list');
       try {
-        const [users, team] = await Promise.all([
-          adminRest('admin_known_users?select=*&order=last_seen.desc&limit=1000'),
+        const [{ data: users, error: usersError }, team] = await Promise.all([
+          supabaseClient.rpc('get_montresique_registered_accounts'),
           adminRest('team_members?select=discord_id,name,roles'),
         ]);
+        if (usersError) throw usersError;
         const teamById = Object.fromEntries((team || []).filter(t => t.discord_id).map(t => [t.discord_id, t]));
         const rows = users || [];
         el.innerHTML = rows.length ? `<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
           <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:0.4rem;">User</th><th style="padding:0.4rem;">Discord ID</th><th style="padding:0.4rem;">Team roles</th><th style="padding:0.4rem;">Last seen</th></tr></thead>
           <tbody>${rows.map(u => `<tr style="border-top:1px solid var(--border);">
             <td style="padding:0.4rem;">${esc(u.username || 'Unknown')}</td>
-            <td style="padding:0.4rem;color:var(--muted);">${esc(u.discord_user_id)}</td>
+            <td style="padding:0.4rem;color:var(--muted);">${u.discord_user_id ? esc(u.discord_user_id) : '<span>Not linked</span>'}</td>
             <td style="padding:0.4rem;">${teamById[u.discord_user_id] ? roleTagsHtml(teamById[u.discord_user_id].roles) : '<span style="color:var(--muted);">not on team</span>'}</td>
-            <td style="padding:0.4rem;color:var(--muted);">${new Date(u.last_seen).toLocaleDateString()}</td>
+            <td style="padding:0.4rem;color:var(--muted);">${u.last_seen ? esc(new Date(u.last_seen).toLocaleDateString()) : 'Never'}</td>
           </tr>`).join('')}</tbody></table>` : '<div style="color:var(--muted);font-size:0.8rem;">No users found yet.</div>';
-      } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load users. Make sure the admin_known_users view exists in Supabase.</div>'; }
+      } catch (e) { console.error(e); el.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Could not load registered accounts. Check the secure account-directory RPC and Supabase permissions.</div>'; }
     }
 
     let allAdminReviews = [];
