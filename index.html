@@ -2325,6 +2325,7 @@
     .mailbox-reader-sender strong { display:block; color:#eaf2ff; font-size:.78rem; font-weight:normal; }
     .mailbox-reader-body { padding:1rem 0; color:var(--text); font-size:.86rem; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; }
     .mailbox-reader-actions { display:flex; justify-content:space-between; align-items:center; gap:.6rem; flex-wrap:wrap; padding-top:.75rem; border-top:1px solid var(--border); }
+    .mailbox-delete-button { color:#ff8d9c !important; border-color:rgba(255,102,136,.42) !important; }
     .mailbox-kind { color:#8dc6ff; font-size:.65rem; letter-spacing:.09em; text-transform:uppercase; }
     .mailbox-empty { display:flex; min-height:250px; flex-direction:column; align-items:center; justify-content:center; gap:.55rem; padding:1.5rem; color:var(--muted); text-align:center; font-size:.8rem; line-height:1.55; }
     .mailbox-empty-icon { color:#4da3ff; font-size:1.7rem; }
@@ -3662,7 +3663,7 @@
           loadAdminServersAndSlugs().catch(e => console.error(e));
         }
       }
-      if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 1000 && allServersFull.length) {
+      if (Date.now() - (window.lastSnapshotAt || 0) > 5 * 60 * 1000 && allServersFull.length) {
         window.lastSnapshotAt = Date.now();
         fetch(SUPABASE_URL + '/rest/v1/player_count_snapshots', {
           method: 'POST', headers: Object.assign({}, SUPABASE_HEADERS, { Prefer: 'return=minimal' }),
@@ -5857,7 +5858,7 @@
         <div class="mailbox-reader-sender"><span class="mailbox-sender-avatar" aria-hidden="true">${esc((selected.sender_name || 'M').trim().charAt(0).toUpperCase() || 'M')}</span><span><strong>${esc(selected.sender_name || 'Montresique')}</strong>${esc(mailDateLabel(selected.created_at))}</span></div>
       </header>
       <div class="mailbox-reader-body">${esc(selected.body || '')}</div>
-      <footer class="mailbox-reader-actions"><span class="account-help">Sent to your Montresique account</span>${selected.read_at ? '<span class="account-help">Read</span>' : `<button class="hub-btn ghost" type="button" onclick="markMontresiqueMailRead('${esc(selected.id)}')">Mark as read</button>`}</footer>`;
+      <footer class="mailbox-reader-actions"><span class="account-help">Sent to your Montresique account</span><span style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">${selected.read_at ? '<span class="account-help">Read</span>' : `<button class="hub-btn ghost" type="button" onclick="markMontresiqueMailRead('${esc(selected.id)}')">Mark as read</button>`}<button class="hub-btn ghost mailbox-delete-button" type="button" onclick="deleteMontresiqueMail('${esc(selected.id)}')" title="Remove this message from your inbox">Delete</button></span></footer>`;
     }
 
     function openMontresiqueMail(id) {
@@ -5887,7 +5888,9 @@
       }
       status.textContent = 'Loading your messages…';
       try {
-        const messages = await adminRest('montresique_mail?select=*&order=created_at.desc&limit=1000');
+        const inboxUserId = discordUser.auth_user_id;
+        if (!inboxUserId) throw new Error('Your account session is not ready');
+        const messages = await adminRest(`montresique_mail?select=*&recipient_user_id=eq.${encodeURIComponent(inboxUserId)}&order=created_at.desc&limit=1000`);
         montresiqueMailMessages = Array.isArray(messages) ? messages : [];
         if (!montresiqueMailMessages.some(message => message.id === selectedMontresiqueMailId)) {
           selectedMontresiqueMailId = montresiqueMailMessages[0]?.id || null;
@@ -5918,6 +5921,23 @@
         message.read_at = previousReadAt;
         renderMontresiqueMail();
         alert('Could not update the message: ' + (e.message || 'unknown error'));
+      }
+    }
+
+    async function deleteMontresiqueMail(id) {
+      const message = montresiqueMailMessages.find(item => item.id === id);
+      if (!message || !discordUser?.auth_user_id || message.recipient_user_id !== discordUser.auth_user_id) return;
+      if (!confirm('Remove this message from your inbox? This will not delete or alter messages in another user’s inbox.')) return;
+      try {
+        const { error } = await supabaseClient.rpc('delete_montresique_mail', { p_message_id: id });
+        if (error) throw error;
+        montresiqueMailMessages = montresiqueMailMessages.filter(item => item.id !== id);
+        if (selectedMontresiqueMailId === id) selectedMontresiqueMailId = null;
+        renderMontresiqueMail();
+        showAuthToast('Message removed from your inbox.');
+      } catch (e) {
+        console.error(e);
+        alert('Could not delete the message: ' + (e.message || 'unknown error'));
       }
     }
 
