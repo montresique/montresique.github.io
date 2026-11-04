@@ -10994,9 +10994,9 @@ function menuEscape(v){return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':
 
 
 const _featureSimBase=sim;sim=function(dt){if(pendingEncounter)return;return _featureSimBase(dt)};
-const _featureGoBase=go;go=function(t){if(t==='dev'&&(!P.set||P.set.dev!==1)){toast('Enable the developer panel first.');return}return _featureGoBase(t)};
-const _featureSetUIBase=setUI;setUI=function(){_featureSetUIBase();const v=$('v');if(v)v.insertAdjacentHTML('afterbegin','<div class="pr"><span style="flex:1"><b>Developer panel</b><br><small>Show or hide developer tools. Disabled by default.</small></span><button class="'+(P.set.dev?'g':'')+'" onclick="P.set.dev=P.set.dev?0:1;if(!P.set.dev&&sheet===\'dev\')sheet=null;save();render()">'+(P.set.dev?'On':'Off')+'</button></div>')};
-const _featureRenderBase=render;render=function(){_featureRenderBase.apply(this,arguments);try{const side=$('side');if(side){for(const b of side.querySelectorAll('button.sb'))if((b.getAttribute('onclick')||'')==="go('dev')")b.style.display=P.set.dev===1?'':'none'}if(sheet==='dev'&&P.set.dev!==1){sheet=null;_featureRenderBase.apply(this,arguments)}}catch(e){console.warn('[feature render]',e)}};
+const _featureGoBase=go;go=function(t){if(t==='dev'&&(!P.set||P.set.dev!==1||typeof rocHasVerifiedAdmin!=='function'||!rocHasVerifiedAdmin())){toast(typeof rocHasVerifiedAdmin==='function'&&rocHasVerifiedAdmin()?'Enable the developer panel first.':'Developer tools require verified Montresique admin access.');return}return _featureGoBase(t)};
+const _featureSetUIBase=setUI;setUI=function(){_featureSetUIBase();const v=$('v');if(v&&typeof rocHasVerifiedAdmin==='function'&&rocHasVerifiedAdmin())v.insertAdjacentHTML('afterbegin','<div class="pr"><span style="flex:1"><b>Developer panel</b><br><small>Show or hide developer tools. Disabled by default.</small></span><button class="'+(P.set.dev?'g':'')+'" onclick="if(typeof rocHasVerifiedAdmin!==\'function\'||!rocHasVerifiedAdmin())return;P.set.dev=P.set.dev?0:1;if(!P.set.dev&&sheet===\'dev\')sheet=null;save();render()">'+(P.set.dev?'On':'Off')+'</button></div>')};
+const _featureRenderBase=render;render=function(){_featureRenderBase.apply(this,arguments);try{const canUseDev=typeof rocHasVerifiedAdmin==='function'&&rocHasVerifiedAdmin();const side=$('side');if(side){for(const b of side.querySelectorAll('button.sb'))if((b.getAttribute('onclick')||'')==="go('dev')")b.style.display=canUseDev&&P.set.dev===1?'':'none'}if(sheet==='dev'&&(!canUseDev||P.set.dev!==1)){sheet=null;_featureRenderBase.apply(this,arguments)}}catch(e){console.warn('[feature render]',e)}};
 
 
 function rebellionActive(id){return !!(id!=null&&P&&P.cq&&P.cq.reb&&P.cq.reb[id]>P.cq.day)}
@@ -11342,6 +11342,43 @@ if (rocSupabaseClient) {
 window.addEventListener('focus', () => {
   if (rocAuthSession) rocVerifyAdmin();
 });
+function rocHasVerifiedAdmin() {
+  return !!(rocAuthReady && rocAuthSession && rocAuthSession.user && rocAuthSession.user.id
+    && rocAdminPending === false && rocAdminState === true);
+}
+function rocBlockDeveloperTool() {
+  if (typeof toast === 'function') toast('Developer tools require verified Montresique admin access.');
+}
+const rocDeveloperActionNames = [
+  'devAllUnits', 'devClearRogue', 'devCoins', 'devDone', 'devFog', 'devFogReset',
+  'devGiveUp', 'devHeal', 'devHnFound', 'devHnGo', 'devHnReset', 'devMan',
+  'devMarks', 'devMaxOwned', 'devOgeFound', 'devOgeGo', 'devOgeReset', 'devOwn',
+  'devPass', 'devPeace', 'devRank', 'devRankUp', 'devRes', 'devRest', 'devSay',
+  'devScoutAll', 'devSetUnit', 'devSpawnRogue', 'devTake', 'devTakeNat',
+  'devTakeNear', 'devUI', 'devUnit', 'skip',
+  'simGo', 'simStart', 'rgFind', 'rgFindList'
+];
+for (const name of rocDeveloperActionNames) {
+  const original = window[name];
+  if (typeof original !== 'function') continue;
+  window[name] = function (...args) {
+    if (!rocHasVerifiedAdmin()) {
+      rocBlockDeveloperTool();
+      return false;
+    }
+    return original.apply(this, args);
+  };
+}
+if (Array.isArray(SHEETS.dev) && typeof SHEETS.dev[1] === 'function') {
+  const renderDeveloperSheet = SHEETS.dev[1];
+  SHEETS.dev[1] = function (...args) {
+    if (!rocHasVerifiedAdmin()) {
+      rocBlockDeveloperTool();
+      return;
+    }
+    return renderDeveloperSheet.apply(this, args);
+  };
+}
 if (new URLSearchParams(location.search).get('panel') === 'admin') go('rocadmin');
 </script>
 </body>
